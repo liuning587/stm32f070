@@ -75,6 +75,8 @@
   </ImportGroup>
   <ItemGroup>
     <ClCompile Include="circ_buf.c" />
+    <ClCompile Include="button.c" />
+    <ClCompile Include="led.c" />
     <ClCompile Include="notify.c" />
     <ClCompile Include="main.c" />
     <ClCompile Include="pools.c" />
@@ -86,6 +88,8 @@
     <ClCompile Include="USB_DEVICE\usbd_template_if.c" />
     <ClCompile Include="USB_DEVICE\usbd_template.c" />
     <ClInclude Include="circ_buf.h" />
+    <ClInclude Include="button.h" />
+    <ClInclude Include="led.h" />
     <ClInclude Include="notify.h" />
     <ClInclude Include="pools.h" />
     <ClInclude Include="request.h" />

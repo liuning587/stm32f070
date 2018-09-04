@@ -16,6 +16,8 @@
 #include "request.h"
 #include "response.h"
 #include "notify.h"
+#include "button.h"
+#include "led.h"
 
 extern PCD_HandleTypeDef hpcd_USB_FS;
 extern USBD_ClassTypeDef USBD_CUSTOM_ClassDriver;
@@ -30,118 +32,6 @@ static void prvUsbDeviceInit(void) {
     USBD_RegisterClass(&USBD_Device, &USBD_CUSTOM_ClassDriver);
     USBD_CUSTOM_RegisterInterface(&USBD_Device, &USBD_CUSTOM_Template_fops);
 	USBD_Start(&USBD_Device);
-}
-
-static void prvLedInit(void) {
-    /* Enable GPIOA clock */
-    LL_AHB1_GRP1_EnableClock(LL_AHB1_GRP1_PERIPH_GPIOA);
-    /* Configure PA.00 pin as input floating */
-    LL_GPIO_InitTypeDef GPIO_InitStructure;
-    LL_GPIO_StructInit(&GPIO_InitStructure);
-    GPIO_InitStructure.Mode = LL_GPIO_MODE_OUTPUT;
-    GPIO_InitStructure.OutputType = LL_GPIO_OUTPUT_PUSHPULL;
-    GPIO_InitStructure.Pull = LL_GPIO_PULL_NO;
-    GPIO_InitStructure.Speed = LL_GPIO_SPEED_LOW;
-    GPIO_InitStructure.Pin = LL_GPIO_PIN_5;
-    LL_GPIO_Init(GPIOA, &GPIO_InitStructure);
-}
-
-static void prvDefaultPinInit(void) {
-     // TODO...
-}
-
-static bool prvIsDefaultPinPressed(void) {
-    // TODO...
-    return false;        
-}
-
-static void prvDefaultPinCb(void) {
-    static uint32_t tick = 0;
-    if (HAL_GetTick() - tick > 50) {
-        struct PoolEntry xEntryPut;
-        xEntryPut.ucLen = sizeof("DEFAULT");
-        memcpy(xEntryPut.aucData, "DEFAULT", xEntryPut.ucLen);
-        ulPoolsPut(NOTIFY_POOL, &xEntryPut);
-        tick = HAL_GetTick();
-    }
-}
-
-static void prvApPinInit(void) {
-     /* Enable GPIOA clock */
-    LL_AHB1_GRP1_EnableClock(LL_AHB1_GRP1_PERIPH_GPIOA);
-    /* Configure PA0 pin as input floating */
-    LL_GPIO_InitTypeDef GPIO_InitStructure;
-    LL_GPIO_StructInit(&GPIO_InitStructure);
-    GPIO_InitStructure.Mode = LL_GPIO_MODE_INPUT;
-    GPIO_InitStructure.Pull = LL_GPIO_PULL_UP;
-    GPIO_InitStructure.Pin = LL_GPIO_PIN_0;
-    LL_GPIO_Init(GPIOA, &GPIO_InitStructure);  
-        /* Enable SYSCF clock */
-    LL_APB1_GRP2_EnableClock(LL_APB1_GRP2_PERIPH_SYSCFG);
-    LL_SYSCFG_SetEXTISource(LL_SYSCFG_EXTI_PORTA, LL_SYSCFG_EXTI_LINE0);
-    /* Configure EXTI Line 0 */ 
-    LL_EXTI_InitTypeDef EXTI_InitStruct;
-    EXTI_InitStruct.Line_0_31 = LL_EXTI_LINE_0;
-    EXTI_InitStruct.LineCommand = ENABLE;
-    EXTI_InitStruct.Mode = LL_EXTI_MODE_IT;
-    EXTI_InitStruct.Trigger = LL_EXTI_TRIGGER_FALLING;
-    LL_EXTI_Init(&EXTI_InitStruct);
-    /* Enable and set EXTI lines 0 to 1 Interrupt to the lowest priority */
-    NVIC_SetPriority(EXTI0_1_IRQn, 2);
-}
-
-static bool prvIsApPinPressed(void) {
-    return LL_GPIO_IsInputPinSet(GPIOA, LL_GPIO_PIN_0);
-}
-
-static void prvApPinCb(void) {
-    static uint32_t tick = 0;
-    if (HAL_GetTick() - tick > 50) {
-        struct PoolEntry xEntryPut;
-        xEntryPut.ucLen = sizeof("AP");
-        memcpy(xEntryPut.aucData, "AP", xEntryPut.ucLen);
-        ulPoolsPut(NOTIFY_POOL, &xEntryPut);
-        tick = HAL_GetTick();
-    }
-}
-
-static void prvInfoPinInit(void) {
-    /* Enable GPIOC clock */
-    LL_AHB1_GRP1_EnableClock(LL_AHB1_GRP1_PERIPH_GPIOC);
-    /* Configure PC13 pin as Input */ 
-    LL_GPIO_InitTypeDef GPIO_InitStructure;
-    LL_GPIO_StructInit(&GPIO_InitStructure);
-    GPIO_InitStructure.Mode = LL_GPIO_MODE_INPUT;
-    GPIO_InitStructure.Pull = LL_GPIO_PULL_NO;
-    GPIO_InitStructure.Pin = LL_GPIO_PIN_13;
-    LL_GPIO_Init(GPIOC, &GPIO_InitStructure);    
-    /* Enable SYSCF clock */
-    LL_APB1_GRP2_EnableClock(LL_APB1_GRP2_PERIPH_SYSCFG);
-    LL_SYSCFG_SetEXTISource(LL_SYSCFG_EXTI_PORTC, LL_SYSCFG_EXTI_LINE13);
-    /* Configure EXTI Line 13 */ 
-    LL_EXTI_InitTypeDef EXTI_InitStruct;
-    EXTI_InitStruct.Line_0_31 = LL_EXTI_LINE_13;
-    EXTI_InitStruct.LineCommand = ENABLE;
-    EXTI_InitStruct.Mode = LL_EXTI_MODE_IT;
-    EXTI_InitStruct.Trigger = LL_EXTI_TRIGGER_FALLING;
-    LL_EXTI_Init(&EXTI_InitStruct);
-    /* Enable and set EXTI lines 4 to 15 Interrupt to the lowest priority */
-    NVIC_SetPriority(EXTI4_15_IRQn, 2);
-}
-
-static bool prvIsInfoPinPressed(void) {
-    return !LL_GPIO_IsInputPinSet(GPIOC, LL_GPIO_PIN_13);
-}
-
-static void  prvInfoPinCb(void) {
-    static uint32_t tick = 0;
-    if (HAL_GetTick() - tick > 50) {
-        struct PoolEntry xEntryPut;
-        xEntryPut.ucLen = sizeof("INFO");
-        memcpy(xEntryPut.aucData, "INFO", xEntryPut.ucLen);
-        ulPoolsPut(NOTIFY_POOL, &xEntryPut);
-        tick = HAL_GetTick();
-    }
 }
 
 void SystemClock_Config(void) {
@@ -200,11 +90,11 @@ static void prvWaitFirstReqFromHost(void) {
 }
 
 static void prvSetBootReason(void) {
-    if (prvIsApPinPressed()) {
+    if (bIsApBtnPressed()) {
         vSetBootReason("AP");
-    } else if (prvIsInfoPinPressed()) {
+    } else if (bIsInfoBtnPressed()) {
         vSetBootReason("INFO");
-    } else if (prvIsDefaultPinPressed()) {
+    } else if (bIsDefaultBtnPressed()) {
         vSetBootReason("DEFAULT");
     } else {
         vSetBootReason("RTC");
@@ -216,10 +106,10 @@ int main(void) {
 	HAL_Init();
 	SystemClock_Config();
     prvUsbDeviceInit();
-    prvLedInit();
-    prvApPinInit();
-    prvInfoPinInit();
-    prvDefaultPinInit();    
+    vLedInit();
+    vApBtnInit();
+    vInfoBtnInit();
+    vDefaultBtnInit();    
     /* Application Init */
     vPoolsInit();     
     /* Application Start */
@@ -260,22 +150,6 @@ void SysTick_Handler(void) {
 
 void USB_IRQHandler(void) {
 	HAL_PCD_IRQHandler(&hpcd_USB_FS);
-}
-
-void EXTI0_1_IRQHandler(void) {
-    if(LL_EXTI_IsActiveFlag_0_31(LL_EXTI_LINE_0)) { 
-        NVIC_DisableIRQ(EXTI0_1_IRQn);
-        LL_EXTI_ClearFlag_0_31(LL_EXTI_LINE_0);
-        prvApPinCb();
-    }   
-}
-void EXTI4_15_IRQHandler(void) {
-    /* EXTI line interrupt detected */
-    if(LL_EXTI_IsActiveFlag_0_31(LL_EXTI_LINE_13)) { 
-        NVIC_DisableIRQ(EXTI4_15_IRQn);
-        LL_EXTI_ClearFlag_0_31(LL_EXTI_LINE_13);
-        prvInfoPinCb();
-    }   
 }
 
 void _Error_Handler(void) {

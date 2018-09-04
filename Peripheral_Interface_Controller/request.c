@@ -35,6 +35,7 @@ void vGetBootReason(void *pArg, uint32_t ulLen) {
 }
 
 void vSetPwr(void *pArg, uint32_t ulLen) {
+
     prvRsp(__FUNCTION__);   
 }
 
@@ -65,6 +66,7 @@ void vSetLed(void *pArg, uint32_t ulLen) {
 void vDummy(void *pArg, uint32_t ulLen) {
     prvRsp(__FUNCTION__);   
 }
+
 pfRequestCb_t xRequestCb[] = { 
         vEcho,
         vGetBootReason,

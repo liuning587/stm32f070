@@ -534,6 +534,12 @@
     <ClCompile Include="main.c">
       <Filter>Source files</Filter>
     </ClCompile>
+    <ClCompile Include="button.c">
+      <Filter>Source files</Filter>
+    </ClCompile>
+    <ClCompile Include="led.c">
+      <Filter>Source files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="USB_DEVICE\usbd_conf.h">
@@ -564,6 +570,12 @@
       <Filter>Header files</Filter>
     </ClInclude>
     <ClInclude Include="request.h">
+      <Filter>Header files</Filter>
+    </ClInclude>
+    <ClInclude Include="button.h">
+      <Filter>Header files</Filter>
+    </ClInclude>
+    <ClInclude Include="led.h">
       <Filter>Header files</Filter>
     </ClInclude>
   </ItemGroup>
