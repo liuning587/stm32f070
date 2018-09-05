@@ -1,4 +1,3 @@
-
 #include "stm32f0xx_ll_cortex.h"
 #include "stm32f0xx_ll_system.h"
 #include "stm32f0xx_ll_rcc.h"    
@@ -6,32 +5,48 @@
 #include "stm32f0xx_ll_gpio.h"
 #include "stm32f0xx_ll_bus.h"
 #include "stm32f0xx_ll_exti.h"
-#include <usbd_core.h>
-#include <usbd_template.h>
-#include <usbd_desc.h>
-#include <usbd_template.h>
-#include <usbd_template_if.h>
+#include "stm32f0xx_hal.h"
 #include <stdbool.h>
+#include <string.h>
 #include "pools.h"
 #include "request.h"
 #include "response.h"
 #include "notify.h"
 
-void vDefaultBtnInit(void) {
-     // TODO...
+void vRecoveryBtnInit(void) {
+     /* Enable GPIOB clock */
+    LL_AHB1_GRP1_EnableClock(LL_AHB1_GRP1_PERIPH_GPIOB);
+    /* Configure PA0 pin as input floating */ 
+    LL_GPIO_InitTypeDef GPIO_InitStructure;
+    LL_GPIO_StructInit(&GPIO_InitStructure);
+    GPIO_InitStructure.Mode = LL_GPIO_MODE_INPUT;
+    GPIO_InitStructure.Pull = LL_GPIO_PULL_DOWN;
+    GPIO_InitStructure.Pin = LL_GPIO_PIN_15;
+    LL_GPIO_Init(GPIOB, &GPIO_InitStructure);  
+        /* Enable SYSCF clock */
+    LL_APB1_GRP2_EnableClock(LL_APB1_GRP2_PERIPH_SYSCFG);
+    LL_SYSCFG_SetEXTISource(LL_SYSCFG_EXTI_PORTB, LL_SYSCFG_EXTI_LINE15);
+    /* Configure EXTI Line 5 */ 
+    LL_EXTI_InitTypeDef EXTI_InitStruct;
+    EXTI_InitStruct.Line_0_31 = LL_EXTI_LINE_15;
+    EXTI_InitStruct.LineCommand = ENABLE;
+    EXTI_InitStruct.Mode = LL_EXTI_MODE_IT;
+    EXTI_InitStruct.Trigger = LL_EXTI_TRIGGER_RISING;
+    LL_EXTI_Init(&EXTI_InitStruct);
+    /* Enable and set EXTI lines 4 to 15 Interrupt to the lowest priority */
+    NVIC_SetPriority(EXTI4_15_IRQn, 2);
 }
 
-bool bIsDefaultBtnPressed(void) {
-    // TODO...
-    return false;        
+bool bIsRecoveryBtnPressed(void) {
+    return LL_GPIO_IsInputPinSet(GPIOB, LL_GPIO_PIN_15);
 }
 
-void vDefaultBtnCb(void) {
+void vRecoveryBtnCb(void) {
     static uint32_t tick = 0;
-    if (HAL_GetTick() - tick > 50) {
+    if (HAL_GetTick() - tick > 200) {
         struct PoolEntry xEntryPut;
-        xEntryPut.ucLen = sizeof("DEFAULT");
-        memcpy(xEntryPut.aucData, "DEFAULT", xEntryPut.ucLen);
+        xEntryPut.ucLen = sizeof("RECOVERY");
+        memcpy(xEntryPut.aucData, "RECOVERY", xEntryPut.ucLen);
         ulPoolsPut(NOTIFY_POOL, &xEntryPut);
         tick = HAL_GetTick();
     }
@@ -67,7 +82,7 @@ bool bIsApBtnPressed(void) {
 
 void vApBtnCb(void) {
     static uint32_t tick = 0;
-    if (HAL_GetTick() - tick > 50) {
+    if (HAL_GetTick() - tick > 200) {
         struct PoolEntry xEntryPut;
         xEntryPut.ucLen = sizeof("AP");
         memcpy(xEntryPut.aucData, "AP", xEntryPut.ucLen);
@@ -106,7 +121,7 @@ bool bIsInfoBtnPressed(void) {
 
 void vInfoBtnCb(void) {
     static uint32_t tick = 0;
-    if (HAL_GetTick() - tick > 50) {
+    if (HAL_GetTick() - tick > 200) {
         struct PoolEntry xEntryPut;
         xEntryPut.ucLen = sizeof("INFO");
         memcpy(xEntryPut.aucData, "INFO", xEntryPut.ucLen);
@@ -117,17 +132,19 @@ void vInfoBtnCb(void) {
 
 void EXTI0_1_IRQHandler(void) {
     if(LL_EXTI_IsActiveFlag_0_31(LL_EXTI_LINE_0)) { 
-        NVIC_DisableIRQ(EXTI0_1_IRQn);
         LL_EXTI_ClearFlag_0_31(LL_EXTI_LINE_0);
         vApBtnCb();
     }   
 }
+
 void EXTI4_15_IRQHandler(void) {
     /* EXTI line interrupt detected */
     if(LL_EXTI_IsActiveFlag_0_31(LL_EXTI_LINE_13)) { 
-        NVIC_DisableIRQ(EXTI4_15_IRQn);
         LL_EXTI_ClearFlag_0_31(LL_EXTI_LINE_13);
         vInfoBtnCb();
     }   
-
+    if(LL_EXTI_IsActiveFlag_0_31(LL_EXTI_LINE_15)) { 
+        LL_EXTI_ClearFlag_0_31(LL_EXTI_LINE_15);
+        vRecoveryBtnCb();
+    }   
 }

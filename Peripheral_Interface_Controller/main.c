@@ -1,6 +1,7 @@
 
 #include "stm32f0xx_ll_cortex.h"
 #include "stm32f0xx_ll_system.h"
+#include "stm32f0xx_ll_pwr.h"
 #include "stm32f0xx_ll_rcc.h"    
 #include "stm32f0xx_ll_utils.h"
 #include "stm32f0xx_ll_gpio.h"
@@ -90,16 +91,29 @@ static void prvWaitFirstReqFromHost(void) {
 }
 
 static void prvSetBootReason(void) {
-    if (bIsApBtnPressed()) {
-        vSetBootReason("AP");
-    } else if (bIsInfoBtnPressed()) {
-        vSetBootReason("INFO");
-    } else if (bIsDefaultBtnPressed()) {
-        vSetBootReason("DEFAULT");
+    /* Enable Power Clock*/
+    __HAL_RCC_PWR_CLK_ENABLE();
+
+    if (LL_PWR_IsActiveFlag_SB()) {
+        if (LL_PWR_IsActiveFlag_WU()) {
+            if (bIsApBtnPressed()) {
+                vSetBootReason("AP");
+            } else if (bIsInfoBtnPressed()) {
+                vSetBootReason("INFO");
+            } else if (bIsRecoveryBtnPressed()) {
+                vSetBootReason("RECOVERY");
+            }
+        } else {
+            vSetBootReason("RTC");   
+        }
     } else {
-        vSetBootReason("RTC");
-    }    
+        vSetBootReason("PWR_ON");
+    }
+    
+    LL_PWR_ClearFlag_SB();
+    LL_PWR_ClearFlag_WU();
 }
+
 
 int main(void) {
     /* Hardware Init */
@@ -109,7 +123,7 @@ int main(void) {
     vLedInit();
     vApBtnInit();
     vInfoBtnInit();
-    vDefaultBtnInit();    
+    vRecoveryBtnInit();    
     /* Application Init */
     vPoolsInit();     
     /* Application Start */
@@ -137,7 +151,7 @@ int main(void) {
 
 void HAL_SYSTICK_Callback(void) {
     static uint32_t tick = 0;
-    if (HAL_GetTick() - tick > 250) {
+    if (HAL_GetTick() - tick > 500) {
         tick = HAL_GetTick();
         LL_GPIO_TogglePin(GPIOA, LL_GPIO_PIN_5);
     }

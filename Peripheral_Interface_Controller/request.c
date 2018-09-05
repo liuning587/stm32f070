@@ -1,4 +1,6 @@
 #include "stm32f0xx_ll_utils.h"
+#include "stm32f0xx_ll_pwr.h"
+#include "stm32f0xx_ll_cortex.h"
 #include "pools.h"
 #include "request.h"
 #include <usbd_core.h>
@@ -35,8 +37,40 @@ void vGetBootReason(void *pArg, uint32_t ulLen) {
 }
 
 void vSetPwr(void *pArg, uint32_t ulLen) {
+    /*  
+     *  The Following Wakeup sequence is highly recommended prior to each Standby mode entry
+     *  mainly  when using more than one wakeup source this is to not miss any wakeup event.
+     *  - Disable all used wakeup sources,
+     *  - Clear all related wakeup flags, 
+     *  - Re-enable all used wakeup sources,
+     *  - Enter the Standby mode.
+     */
+    
+    /* Enable Power Clock*/
+    __HAL_RCC_PWR_CLK_ENABLE();
+  
+    /* Disable all used wakeup sources: WKUP pin */
+    LL_PWR_DisableWakeUpPin(LL_PWR_WAKEUP_PIN1);    // AP Pin
+    LL_PWR_DisableWakeUpPin(LL_PWR_WAKEUP_PIN2);    // INFO Pin
+    LL_PWR_DisableWakeUpPin(LL_PWR_WAKEUP_PIN7);    // RECOVERY Pin
 
-    prvRsp(__FUNCTION__);   
+    /* Clear all related wakeup flags */
+    LL_PWR_ClearFlag_WU();
+  
+    /* Re-enable all used wakeup sources */
+    LL_PWR_EnableWakeUpPin(LL_PWR_WAKEUP_PIN1); 
+    LL_PWR_EnableWakeUpPin(LL_PWR_WAKEUP_PIN2); 
+    LL_PWR_EnableWakeUpPin(LL_PWR_WAKEUP_PIN7);     // ??? no function
+    
+    /* Enter the Standby mode */
+    {
+        /* Select STANDBY mode */
+        LL_PWR_SetPowerMode(LL_PWR_MODE_STANDBY);
+        /* Set SLEEPDEEP bit of Cortex System Control Register */
+        LL_LPM_EnableDeepSleep();
+        /* Request Wait For Interrupt */
+        __WFI();
+    }
 }
 
 void vSetEpdPwr(void *pArg, uint32_t ulLen) {

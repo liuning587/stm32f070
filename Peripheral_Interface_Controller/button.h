@@ -3,15 +3,15 @@
 
 #include <stdbool.h>
 
-void vDefaultBtnInit(void);
+void vRecoveryBtnInit(void);
 void vInfoBtnInit(void);
 void vApBtnInit(void);
 
-bool bIsDefaultBtnPressed(void);
+bool bIsRecoveryBtnPressed(void);
 bool bIsInfoBtnPressed(void);
 bool bIsApBtnPressed(void);
 
-void vDefaultBtnCb(void);
+void vRecoveryBtnCb(void);
 void vInfoBtnCb(void);
 void vApBtnCb(void);
 
