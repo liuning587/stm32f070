@@ -43,7 +43,7 @@
     <ClCompile>
       <CLanguageStandard>GNU99</CLanguageStandard>
       <AdditionalIncludeDirectories>USB_DEVICE;%(ClCompile.AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>DEBUG=1;USE_USB_CLKSOURCE_PLL;DEBUG_DEFAULT_INTERRUPT_HANDLERS;USE_FULL_LL_DRIVER;%(ClCompile.PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>DEBUG=1;USE_USB_CLKSOURCE_PLL;DEBUG_DEFAULT_INTERRUPT_HANDLERS;USE_FULL_LL_DRIVER;PWR_CSR_EWUP7;%(ClCompile.PreprocessorDefinitions)</PreprocessorDefinitions>
       <AdditionalOptions />
       <CPPLanguageStandard />
     </ClCompile>

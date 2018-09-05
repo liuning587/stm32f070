@@ -1,20 +1,6 @@
-#include "stm32f0xx_ll_cortex.h"
-#include "stm32f0xx_ll_system.h"
-#include "stm32f0xx_ll_rcc.h"    
 #include "stm32f0xx_ll_utils.h"
 #include "stm32f0xx_ll_gpio.h"
 #include "stm32f0xx_ll_bus.h"
-#include "stm32f0xx_ll_exti.h"
-#include <usbd_core.h>
-#include <usbd_template.h>
-#include <usbd_desc.h>
-#include <usbd_template.h>
-#include <usbd_template_if.h>
-#include <stdbool.h>
-#include "pools.h"
-#include "request.h"
-#include "response.h"
-#include "notify.h"
 
 void vLedInit(void) {
     /* Enable GPIOA clock */
@@ -28,4 +14,10 @@ void vLedInit(void) {
     GPIO_InitStructure.Speed = LL_GPIO_SPEED_LOW;
     GPIO_InitStructure.Pin = LL_GPIO_PIN_5;
     LL_GPIO_Init(GPIOA, &GPIO_InitStructure);
+    for (int i = 0; i < 8; i++) {
+        LL_GPIO_SetOutputPin(GPIOA, LL_GPIO_PIN_5);
+        LL_mDelay(50);
+        LL_GPIO_ResetOutputPin(GPIOA, LL_GPIO_PIN_5);
+        LL_mDelay(50);
+    }
 }
