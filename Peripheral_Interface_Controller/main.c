@@ -93,27 +93,21 @@ static void prvWaitFirstReqFromHost(void) {
 }
 
 static void prvSetBootReason(void) {
-    /* Enable Power Clock*/
-    __HAL_RCC_PWR_CLK_ENABLE();
-
-    if (LL_PWR_IsActiveFlag_SB()) {
-        if (LL_PWR_IsActiveFlag_WU()) {
-            if (bIsApBtnPressed()) {
-                vSetBootReason("AP");
-            } else if (bIsInfoBtnPressed()) {
-                vSetBootReason("INFO");
-            } else if (bIsRecoveryBtnPressed()) {
-                vSetBootReason("RECOVERY");
-            } else {
-                vSetBootReason("RTC");
-            }
+    /* Enable PWR clock */
+    LL_APB1_GRP1_EnableClock(LL_APB1_GRP1_PERIPH_PWR);
+    if (LL_PWR_IsActiveFlag_WU() && LL_PWR_IsActiveFlag_SB()) {
+        if (bIsApBtnPressed()) {
+            vSetBootReason("AP");
+        } else if (bIsInfoBtnPressed()) {
+            vSetBootReason("INFO");
+        } else if (bIsRecoveryBtnPressed()) {
+            vSetBootReason("RECOVERY");
         } else {
-            vSetBootReason("UNDEFINE");
-        }      
+            vSetBootReason("RTC");
+        }
     } else {
         vSetBootReason("PWR_ON");
-    }
-    LL_PWR_ClearFlag_SB();
+    }       
 }
 
 void RTC_IRQHandler(void) {
@@ -148,14 +142,14 @@ int main(void) {
     /* Hardware Init */
     prvMspInit();
     prvBspInit();
+    /* EXTI Irq Enable */
+	NVIC_EnableIRQ(EXTI0_1_IRQn);
+	NVIC_EnableIRQ(EXTI4_15_IRQn);
     /* Application Init */
     vPoolsInit();     
     /* Application Start */
     prvSetBootReason();  
-    prvWaitFirstReqFromHost();
-    /* EXTI Irq Enable */
-	NVIC_EnableIRQ(EXTI0_1_IRQn);
-	NVIC_EnableIRQ(EXTI4_15_IRQn);
+    prvWaitFirstReqFromHost();    
 	for (;;) { /* main loop */    	    	
     	__WFI();   
     	struct PoolEntry xReqPoolEntry, xRspPoolEntry, xNotifyPoolEntry; 	
@@ -174,12 +168,38 @@ int main(void) {
 	}
 }
 
-void HAL_SYSTICK_Callback(void) {
-    static uint32_t tick = 0;
-    if (HAL_GetTick() - tick > 500) {
-        tick = HAL_GetTick();
-        LL_GPIO_TogglePin(GPIOA, LL_GPIO_PIN_5);
+static void prvDefualtSysTick(void) {
+    switch (HAL_GetTick() % 3000) {
+    case 0:
+        LL_GPIO_SetOutputPin(GPIOA, LL_GPIO_PIN_5);
+        break;
+    case 30:
+        LL_GPIO_ResetOutputPin(GPIOA, LL_GPIO_PIN_5);
+        break;   
+    case 120:
+        LL_GPIO_SetOutputPin(GPIOA, LL_GPIO_PIN_5);
+        break;
+    case 150:
+        LL_GPIO_ResetOutputPin(GPIOA, LL_GPIO_PIN_5);
+        break;  
     }
+}
+
+static void(*pfSysTickCb)(void) = prvDefualtSysTick;
+
+void* vGetSysTickCallBack(void) {
+    return pfSysTickCb;
+}
+
+void vSetSysTickCallBack(void *callback) {
+    if (callback == NULL) 
+        pfSysTickCb = prvDefualtSysTick;
+    else
+        pfSysTickCb = callback;
+}
+
+void HAL_SYSTICK_Callback(void) {
+    pfSysTickCb();
 }
 
 void SysTick_Handler(void) {

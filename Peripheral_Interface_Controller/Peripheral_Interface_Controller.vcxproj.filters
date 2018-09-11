@@ -593,7 +593,7 @@
   </ItemGroup>
   <ItemGroup>
     <LinkerScript Include="STM32F070C6_flash.lds">
-      <Filter>Source files</Filter>
+      <Filter>Resource files</Filter>
     </LinkerScript>
   </ItemGroup>
 </Project>

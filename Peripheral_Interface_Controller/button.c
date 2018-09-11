@@ -119,6 +119,23 @@ bool bIsInfoBtnPressed(void) {
     return LL_GPIO_IsInputPinSet(GPIOC, LL_GPIO_PIN_13);
 }
 
+
+static void prvInfoPinCb(void) {
+    switch (HAL_GetTick() % 750) {
+    case 0:
+        LL_GPIO_SetOutputPin(GPIOA, LL_GPIO_PIN_5);
+        break;
+    case 25:
+        LL_GPIO_ResetOutputPin(GPIOA, LL_GPIO_PIN_5);
+        break;   
+    default:
+        break;  
+    }
+
+}
+
+extern void vSetSysTickCallBack(void *callback);
+extern void* vGetSysTickCallBack(void);
 void vInfoBtnCb(void) {
     static uint32_t tick = 0;
     if (HAL_GetTick() - tick > 200) {
@@ -127,6 +144,7 @@ void vInfoBtnCb(void) {
         memcpy(xEntryPut.aucData, "INFO", xEntryPut.ucLen);
         ulPoolsPut(NOTIFY_POOL, &xEntryPut);
         tick = HAL_GetTick();
+        vSetSysTickCallBack(vGetSysTickCallBack() == prvInfoPinCb ? NULL : prvInfoPinCb);
     }
 }
 
@@ -136,6 +154,7 @@ void EXTI0_1_IRQHandler(void) {
         vApBtnCb();
     }   
 }
+
 
 void EXTI4_15_IRQHandler(void) {
     /* EXTI line interrupt detected */

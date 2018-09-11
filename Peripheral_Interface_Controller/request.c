@@ -198,7 +198,9 @@ void vSetDate(void *pArg, uint32_t ulLen) {
 }
 
 void vGetAlarm(void *pArg, uint32_t ulLen) {
-    prvRsp(__FUNCTION__);   
+    char str[32];
+    sprintf(str, "%08X\r\n", (int)LL_RTC_ALMA_GetTime(RTC));
+    prvRsp(str);   
 }
 
 void vSetAlarm(void *pArg, uint32_t ulLen) {
@@ -239,7 +241,6 @@ void vSetLed(void *pArg, uint32_t ulLen) {
 void vDummy(void *pArg, uint32_t ulLen) {
     prvRsp(__FUNCTION__);   
 }
-
 
 pfRequestCb_t xRequestCb[] = { 
         vEcho,          //A
