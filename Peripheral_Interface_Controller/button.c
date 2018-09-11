@@ -62,7 +62,7 @@ void vApBtnInit(void) {
     GPIO_InitStructure.Pull = LL_GPIO_PULL_DOWN;
     GPIO_InitStructure.Pin = LL_GPIO_PIN_0;
     LL_GPIO_Init(GPIOA, &GPIO_InitStructure);  
-        /* Enable SYSCF clock */
+    /* Enable SYSCF clock */
     LL_APB1_GRP2_EnableClock(LL_APB1_GRP2_PERIPH_SYSCFG);
     LL_SYSCFG_SetEXTISource(LL_SYSCFG_EXTI_PORTA, LL_SYSCFG_EXTI_LINE0);
     /* Configure EXTI Line 0 */ 
@@ -142,9 +142,11 @@ void EXTI4_15_IRQHandler(void) {
     if(LL_EXTI_IsActiveFlag_0_31(LL_EXTI_LINE_13)) { 
         LL_EXTI_ClearFlag_0_31(LL_EXTI_LINE_13);
         vInfoBtnCb();
+        return;
     }   
     if(LL_EXTI_IsActiveFlag_0_31(LL_EXTI_LINE_15)) { 
         LL_EXTI_ClearFlag_0_31(LL_EXTI_LINE_15);
         vRecoveryBtnCb();
+        return;
     }   
 }

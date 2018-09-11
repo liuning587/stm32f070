@@ -1,12 +1,12 @@
-
 #include "stm32f0xx_ll_cortex.h"
 #include "stm32f0xx_ll_system.h"
 #include "stm32f0xx_ll_pwr.h"
-#include "stm32f0xx_ll_rcc.h"    
+#include "stm32f0xx_ll_rcc.h"
 #include "stm32f0xx_ll_utils.h"
 #include "stm32f0xx_ll_gpio.h"
 #include "stm32f0xx_ll_bus.h"
 #include "stm32f0xx_ll_exti.h"
+#include "stm32f0xx_ll_rtc.h"
 #include <usbd_core.h>
 #include <usbd_template.h>
 #include <usbd_desc.h>
@@ -19,6 +19,7 @@
 #include "notify.h"
 #include "button.h"
 #include "led.h"
+#include "rtc.h"
 
 extern PCD_HandleTypeDef hpcd_USB_FS;
 extern USBD_ClassTypeDef USBD_CUSTOM_ClassDriver;
@@ -35,12 +36,13 @@ static void prvUsbDeviceInit(void) {
 	USBD_Start(&USBD_Device);
 }
 
-void SystemClock_Config(void) {
+void vSysClkConfig(void) {
     LL_FLASH_SetLatency(LL_FLASH_LATENCY_1);
 
     if (LL_FLASH_GetLatency() != LL_FLASH_LATENCY_1) {
         Error_Handler();  
     }
+    
     LL_RCC_HSE_Enable();
 
     /* Wait till HSE is ready */
@@ -85,7 +87,7 @@ static void prvWaitFirstReqFromHost(void) {
     uint32_t reqId = xReqPoolEntry.aucData[0];
     uint8_t *pArg = &xReqPoolEntry.aucData[1];
     xGetReqCb(reqId)(pArg, len - 1);  
-    if (ulPoolsGet(RSP_POOL, (struct PoolEntry*)&xRspPoolEntry)) {        
+    while (ulPoolsGet(RSP_POOL, (struct PoolEntry*)&xRspPoolEntry)) {        
         vResponse(xRspPoolEntry.aucData, xRspPoolEntry.ucLen);     
     } 
 }
@@ -102,36 +104,59 @@ static void prvSetBootReason(void) {
                 vSetBootReason("INFO");
             } else if (bIsRecoveryBtnPressed()) {
                 vSetBootReason("RECOVERY");
+            } else {
+                vSetBootReason("RTC");
             }
         } else {
-            vSetBootReason("RTC");   
-        }
+            vSetBootReason("UNDEFINE");
+        }      
     } else {
         vSetBootReason("PWR_ON");
     }
-    
     LL_PWR_ClearFlag_SB();
-    LL_PWR_ClearFlag_WU();
 }
 
+void RTC_IRQHandler(void) {
+    __BKPT(255);
+}
+
+extern void vPwrCtrlInit(void);
+
+static void prvMspInit(void) {
+    /* MCU Support Package */
+    LL_FLASH_EnablePrefetch();    
+    /* SVC_IRQn interrupt configuration */
+    HAL_NVIC_SetPriority(SVC_IRQn, 0, 0);
+    /* PendSV_IRQn interrupt configuration */
+    HAL_NVIC_SetPriority(PendSV_IRQn, 0, 0);
+    /* SysTick_IRQn interrupt configuration */
+    HAL_NVIC_SetPriority(SysTick_IRQn, 0, 0);    
+}
+
+static void prvBspInit(void) {
+    vSysClkConfig();
+    vPwrCtrlInit();       
+    vLedInit();
+    vRtcInit();
+    vApBtnInit();
+    vInfoBtnInit();
+    vRecoveryBtnInit();   
+    prvUsbDeviceInit(); 
+}
 
 int main(void) {
     /* Hardware Init */
-	HAL_Init();
-	SystemClock_Config();
-    prvUsbDeviceInit();
-    vLedInit();
-    vApBtnInit();
-    vInfoBtnInit();
-    vRecoveryBtnInit();    
+    prvMspInit();
+    prvBspInit();
     /* Application Init */
     vPoolsInit();     
     /* Application Start */
     prvSetBootReason();  
     prvWaitFirstReqFromHost();
-	for (;;) { /* main loop */    	
-    	NVIC_EnableIRQ(EXTI0_1_IRQn);
-    	NVIC_EnableIRQ(EXTI4_15_IRQn);    	
+    /* EXTI Irq Enable */
+	NVIC_EnableIRQ(EXTI0_1_IRQn);
+	NVIC_EnableIRQ(EXTI4_15_IRQn);
+	for (;;) { /* main loop */    	    	
     	__WFI();   
     	struct PoolEntry xReqPoolEntry, xRspPoolEntry, xNotifyPoolEntry; 	
     	while (ulPoolsGet(REQ_POOL, (struct PoolEntry*)&xReqPoolEntry)) {        	
@@ -139,7 +164,7 @@ int main(void) {
         	uint32_t reqId = xReqPoolEntry.aucData[0];
         	uint8_t *pArg = &xReqPoolEntry.aucData[1];
         	xGetReqCb(reqId)(pArg, len - 1);        	
-    	    if (ulPoolsGet(RSP_POOL, (struct PoolEntry*)&xRspPoolEntry)) {        
+    	    while (ulPoolsGet(RSP_POOL, (struct PoolEntry*)&xRspPoolEntry)) {        
         	    vResponse(xRspPoolEntry.aucData, xRspPoolEntry.ucLen);     
     	    } 
     	} 

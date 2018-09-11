@@ -749,9 +749,9 @@ void USBD_static_free(void *p)
   *         enable HSI, PLL and select PLL as system clock source.
   * @retval None
   */
-static void SystemClockConfig_Resume(void)
-{
-  SystemClock_Config();
+static void SystemClockConfig_Resume(void) {
+    extern void vSysClkConfig(void);
+    vSysClkConfig();
 }
 /* USER CODE END 5 */
 
