@@ -31,11 +31,15 @@
 
 
 void vRtcInit(void) {
-    if (!LL_PWR_IsActiveFlag_SB()) {
-        /* Enable PWR clock */
-        LL_APB1_GRP1_EnableClock(LL_APB1_GRP1_PERIPH_PWR);
-        /* Allow access to Backup, reset RTC Domain */
-        LL_PWR_EnableBkUpAccess();
+    /* Enable PWR clock */
+    LL_APB1_GRP1_EnableClock(LL_APB1_GRP1_PERIPH_PWR);
+    /* Allow access to Backup, reset RTC Domain */
+    LL_PWR_EnableBkUpAccess();    
+    if (LL_PWR_IsActiveFlag_SB()) {
+        LL_RTC_DisableWriteProtection(RTC);
+        LL_RTC_WaitForSynchro(RTC);
+        LL_RTC_EnableWriteProtection(RTC);
+    } else {
         /* Reset backup domain */
         LL_RCC_ForceBackupDomainReset();
         LL_RCC_ReleaseBackupDomainReset();
@@ -44,7 +48,7 @@ void vRtcInit(void) {
         LL_RCC_LSE_Enable();
                 
         /* Wait till LSE is ready */
-        while (LL_RCC_LSE_IsReady() != 1);
+        while (LL_RCC_LSE_IsReady() != 1) ;
         LL_RCC_SetRTCClockSource(LL_RCC_RTC_CLKSOURCE_LSE);
         LL_RCC_EnableRTC();
         
@@ -63,9 +67,8 @@ void vRtcInit(void) {
         RTC_DateStruct.Month = LL_RTC_MONTH_JANUARY;
         RTC_DateStruct.Day = 0x01;
         RTC_DateStruct.Year = 0x18;
-        LL_RTC_DATE_Init(RTC, LL_RTC_FORMAT_BCD, &RTC_DateStruct);
-        
-        /* Deny access to Backup, reset RTC Domain */
-        LL_PWR_DisableBkUpAccess();
+        LL_RTC_DATE_Init(RTC, LL_RTC_FORMAT_BCD, &RTC_DateStruct);        
     }
+    /* Deny access to Backup, reset RTC Domain */
+    LL_PWR_DisableBkUpAccess();
 }
