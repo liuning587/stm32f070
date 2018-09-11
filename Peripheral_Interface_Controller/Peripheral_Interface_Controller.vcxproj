@@ -51,24 +51,25 @@
       <AdditionalLinkerInputs>;%(Link.AdditionalLinkerInputs)</AdditionalLinkerInputs>
       <LibrarySearchDirectories>;%(Link.LibrarySearchDirectories)</LibrarySearchDirectories>
       <AdditionalLibraryNames>;%(Link.AdditionalLibraryNames)</AdditionalLibraryNames>
-      <LinkerScript />
+      <LinkerScript>STM32F070C6_flash.lds</LinkerScript>
       <AdditionalOptions />
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|VisualGDB'">
     <ClCompile>
       <CLanguageStandard>GNU99</CLanguageStandard>
-      <AdditionalIncludeDirectories>;%(ClCompile.AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>NDEBUG=1;RELEASE=1;USE_USB_CLKSOURCE_PLL;DEBUG_DEFAULT_INTERRUPT_HANDLERS;%(ClCompile.PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>USB_DEVICE;%(ClCompile.AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>DEBUG=1;USE_USB_CLKSOURCE_PLL;DEBUG_DEFAULT_INTERRUPT_HANDLERS;USE_FULL_LL_DRIVER;PWR_CSR_EWUP7;%(ClCompile.PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
     <Link>
       <AdditionalLinkerInputs>;%(Link.AdditionalLinkerInputs)</AdditionalLinkerInputs>
       <LibrarySearchDirectories>;%(Link.LibrarySearchDirectories)</LibrarySearchDirectories>
       <AdditionalLibraryNames>;%(Link.AdditionalLibraryNames)</AdditionalLibraryNames>
-      <LinkerScript />
+      <LinkerScript>STM32F070C6_flash.lds</LinkerScript>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <LinkerScript Include="STM32F070C6_flash.lds" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
@@ -80,8 +81,10 @@
     <ClCompile Include="notify.c" />
     <ClCompile Include="main.c" />
     <ClCompile Include="pools.c" />
+    <ClCompile Include="pwrctrl.c" />
     <ClCompile Include="request.c" />
     <ClCompile Include="response.c" />
+    <ClCompile Include="rtc.c" />
     <ClCompile Include="system_stm32f0xx.c" />
     <ClCompile Include="USB_DEVICE\usbd_conf.c" />
     <ClCompile Include="USB_DEVICE\usbd_desc.c" />
@@ -92,8 +95,10 @@
     <ClInclude Include="led.h" />
     <ClInclude Include="notify.h" />
     <ClInclude Include="pools.h" />
+    <ClInclude Include="pwrctrl.h" />
     <ClInclude Include="request.h" />
     <ClInclude Include="response.h" />
+    <ClInclude Include="rtc.h" />
     <ClInclude Include="USB_DEVICE\usbd_conf.h" />
     <ClInclude Include="USB_DEVICE\usbd_desc.h" />
     <ClInclude Include="USB_DEVICE\usbd_template_if.h" />

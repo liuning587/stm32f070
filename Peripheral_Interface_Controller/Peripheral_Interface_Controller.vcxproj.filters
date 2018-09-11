@@ -540,6 +540,12 @@
     <ClCompile Include="led.c">
       <Filter>Source files</Filter>
     </ClCompile>
+    <ClCompile Include="pwrctrl.c">
+      <Filter>Source files</Filter>
+    </ClCompile>
+    <ClCompile Include="rtc.c">
+      <Filter>Source files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="USB_DEVICE\usbd_conf.h">
@@ -578,5 +584,16 @@
     <ClInclude Include="led.h">
       <Filter>Header files</Filter>
     </ClInclude>
+    <ClInclude Include="pwrctrl.h">
+      <Filter>Header files</Filter>
+    </ClInclude>
+    <ClInclude Include="rtc.h">
+      <Filter>Header files</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <LinkerScript Include="STM32F070C6_flash.lds">
+      <Filter>Source files</Filter>
+    </LinkerScript>
   </ItemGroup>
 </Project>
