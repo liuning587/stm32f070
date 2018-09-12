@@ -23,18 +23,22 @@ void vRecoveryBtnInit(void) {
     GPIO_InitStructure.Pull = LL_GPIO_PULL_DOWN;
     GPIO_InitStructure.Pin = LL_GPIO_PIN_15;
     LL_GPIO_Init(GPIOB, &GPIO_InitStructure);  
-        /* Enable SYSCF clock */
+    /* Enable and set EXTI lines 4 to 15 Interrupt to the lowest priority */
+    NVIC_SetPriority(EXTI4_15_IRQn, 2);    
+	NVIC_EnableIRQ(EXTI4_15_IRQn);
+}
+
+void vRecoveryBtnEnableIrq(FunctionalState xEnable) {
+    /* Enable SYSCF clock */
     LL_APB1_GRP2_EnableClock(LL_APB1_GRP2_PERIPH_SYSCFG);
     LL_SYSCFG_SetEXTISource(LL_SYSCFG_EXTI_PORTB, LL_SYSCFG_EXTI_LINE15);
     /* Configure EXTI Line 5 */ 
     LL_EXTI_InitTypeDef EXTI_InitStruct;
     EXTI_InitStruct.Line_0_31 = LL_EXTI_LINE_15;
-    EXTI_InitStruct.LineCommand = ENABLE;
+    EXTI_InitStruct.LineCommand = xEnable;
     EXTI_InitStruct.Mode = LL_EXTI_MODE_IT;
     EXTI_InitStruct.Trigger = LL_EXTI_TRIGGER_RISING;
-    LL_EXTI_Init(&EXTI_InitStruct);
-    /* Enable and set EXTI lines 4 to 15 Interrupt to the lowest priority */
-    NVIC_SetPriority(EXTI4_15_IRQn, 2);
+    LL_EXTI_Init(&EXTI_InitStruct);  
 }
 
 bool bIsRecoveryBtnPressed(void) {
@@ -62,18 +66,22 @@ void vApBtnInit(void) {
     GPIO_InitStructure.Pull = LL_GPIO_PULL_DOWN;
     GPIO_InitStructure.Pin = LL_GPIO_PIN_0;
     LL_GPIO_Init(GPIOA, &GPIO_InitStructure);  
+    /* Enable and set EXTI lines 0 to 1 Interrupt to the lowest priority */
+    NVIC_SetPriority(EXTI0_1_IRQn, 2);
+    NVIC_EnableIRQ(EXTI0_1_IRQn);
+}
+
+void vApBtnEnableIrq(FunctionalState xEnable) {
     /* Enable SYSCF clock */
     LL_APB1_GRP2_EnableClock(LL_APB1_GRP2_PERIPH_SYSCFG);
     LL_SYSCFG_SetEXTISource(LL_SYSCFG_EXTI_PORTA, LL_SYSCFG_EXTI_LINE0);
     /* Configure EXTI Line 0 */ 
     LL_EXTI_InitTypeDef EXTI_InitStruct;
     EXTI_InitStruct.Line_0_31 = LL_EXTI_LINE_0;
-    EXTI_InitStruct.LineCommand = ENABLE;
+    EXTI_InitStruct.LineCommand = xEnable;
     EXTI_InitStruct.Mode = LL_EXTI_MODE_IT;
     EXTI_InitStruct.Trigger = LL_EXTI_TRIGGER_RISING;
     LL_EXTI_Init(&EXTI_InitStruct);
-    /* Enable and set EXTI lines 0 to 1 Interrupt to the lowest priority */
-    NVIC_SetPriority(EXTI0_1_IRQn, 2);
 }
 
 bool bIsApBtnPressed(void) {
@@ -101,24 +109,27 @@ void vInfoBtnInit(void) {
     GPIO_InitStructure.Pull = LL_GPIO_PULL_DOWN;
     GPIO_InitStructure.Pin = LL_GPIO_PIN_13;
     LL_GPIO_Init(GPIOC, &GPIO_InitStructure);    
+    /* Enable and set EXTI lines 4 to 15 Interrupt to the lowest priority */
+    NVIC_SetPriority(EXTI4_15_IRQn, 2);    
+	NVIC_EnableIRQ(EXTI4_15_IRQn);
+}
+
+void vInfoBtnEnableIrq(FunctionalState xEnable) {
     /* Enable SYSCF clock */
     LL_APB1_GRP2_EnableClock(LL_APB1_GRP2_PERIPH_SYSCFG);
     LL_SYSCFG_SetEXTISource(LL_SYSCFG_EXTI_PORTC, LL_SYSCFG_EXTI_LINE13);
     /* Configure EXTI Line 13 */ 
     LL_EXTI_InitTypeDef EXTI_InitStruct;
     EXTI_InitStruct.Line_0_31 = LL_EXTI_LINE_13;
-    EXTI_InitStruct.LineCommand = ENABLE;
+    EXTI_InitStruct.LineCommand = xEnable;
     EXTI_InitStruct.Mode = LL_EXTI_MODE_IT;
     EXTI_InitStruct.Trigger = LL_EXTI_TRIGGER_RISING;
     LL_EXTI_Init(&EXTI_InitStruct);
-    /* Enable and set EXTI lines 4 to 15 Interrupt to the lowest priority */
-    NVIC_SetPriority(EXTI4_15_IRQn, 2);
 }
 
 bool bIsInfoBtnPressed(void) {
     return LL_GPIO_IsInputPinSet(GPIOC, LL_GPIO_PIN_13);
 }
-
 
 static void prvInfoPinCb(void) {
     switch (HAL_GetTick() % 750) {

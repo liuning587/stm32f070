@@ -15,4 +15,7 @@ void vRecoveryBtnCb(void);
 void vInfoBtnCb(void);
 void vApBtnCb(void);
 
+void vRecoveryBtnEnableIrq(FunctionalState xEnable);
+void vInfoBtnEnableIrq(FunctionalState xEnable);
+void vApBtnEnableIrq(FunctionalState xEnable);
 #endif // !__BUTTON_H__
