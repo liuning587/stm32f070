@@ -1,3 +1,4 @@
+#include "stm32f0xx.h"
 #include "stm32f0xx_ll_cortex.h"
 #include "stm32f0xx_ll_system.h"
 #include "stm32f0xx_ll_pwr.h"
@@ -80,9 +81,9 @@ void vSysClkConfig(void) {
 static void prvWaitFirstReqFromHost(void) {
     uint32_t ret;
     struct PoolEntry xReqPoolEntry, xRspPoolEntry;   
-    while (ulPoolsGet(REQ_POOL, (struct PoolEntry*)&xReqPoolEntry) == 0) {
-        __WFI();
-    }
+    do {
+        __WFI();        
+    } while (ulPoolsGet(REQ_POOL, (struct PoolEntry*)&xReqPoolEntry) == 0);
     uint32_t len = xReqPoolEntry.ucLen;
     uint32_t reqId = xReqPoolEntry.aucData[0];
     uint8_t *pArg = &xReqPoolEntry.aucData[1];
@@ -142,14 +143,15 @@ int main(void) {
     /* Hardware Init */
     prvMspInit();
     prvBspInit();
-    /* EXTI Irq Enable */
-	NVIC_EnableIRQ(EXTI0_1_IRQn);
-	NVIC_EnableIRQ(EXTI4_15_IRQn);
     /* Application Init */
     vPoolsInit();     
     /* Application Start */
     prvSetBootReason();  
-    prvWaitFirstReqFromHost();    
+    prvWaitFirstReqFromHost();        
+    /* Enable Btn Irq */
+    vRecoveryBtnEnableIrq(ENABLE);
+    vInfoBtnEnableIrq(ENABLE);
+    vApBtnEnableIrq(ENABLE);
 	for (;;) { /* main loop */    	    	
     	__WFI();   
     	struct PoolEntry xReqPoolEntry, xRspPoolEntry, xNotifyPoolEntry; 	
