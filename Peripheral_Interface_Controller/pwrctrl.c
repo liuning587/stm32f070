@@ -73,8 +73,8 @@ void vPwrCtrlInit(void) {
     GPIO_InitStructure.Pin = LL_GPIO_PIN_0 | LL_GPIO_PIN_1 | LL_GPIO_PIN_2; 
     LL_GPIO_Init(GPIOB, &GPIO_InitStructure);
     
-    vPwrCtrlUsbHub(PWR_ON);
     vPwrCtrlRasberryPi(PWR_ON);
+    vPwrCtrlUsbHub(PWR_ON);
     vPwrCtrlEpd(PWR_OFF);
     vPwrCtrlExtUsbDev1(PWR_OFF);
     vPwrCtrlExtUsbDev2(PWR_OFF);

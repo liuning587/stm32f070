@@ -9,6 +9,5 @@
 
 extern USBD_HandleTypeDef USBD_Device;
 void vNotify(void *pArg, uint32_t ulLen) {
-    USBD_CUSTOM_Transmit(&USBD_Device, pArg, ulLen); 
+    USBD_CUSTOM_Transmit(&USBD_Device, CUSTOM_IN_EP, pArg, ulLen); 
 }
-

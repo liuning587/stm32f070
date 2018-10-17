@@ -3,6 +3,7 @@
 #include "stm32f0xx_ll_bus.h"
 #include "stm32f0xx_ll_cortex.h"
 #include "stm32f0xx_ll_rtc.h"
+#include "stm32f0xx_ll_i2c.h"
 #include "pools.h"
 #include "request.h"
 #include <usbd_core.h>
@@ -13,7 +14,7 @@
 #include "pwrctrl.h"
 
 extern USBD_HandleTypeDef USBD_Device;
-extern uint8_t  USBD_CUSTOM_Transmit(USBD_HandleTypeDef *pdev, const uint8_t *pData, uint32_t ulDataSize);
+extern uint8_t USBD_CUSTOM_Transmit(USBD_HandleTypeDef *pdev, uint8_t epNum, const uint8_t *pData, uint32_t ulDataSize);
 
 char aucBootReason[32];
 
@@ -21,14 +22,14 @@ static void prvRsp(const char *pcStr) {
     struct PoolEntry xEntryPut;
     xEntryPut.ucLen = strlen(pcStr) + 1;
     memcpy(xEntryPut.aucData, pcStr, xEntryPut.ucLen);
-    ulPoolsPut(RSP_POOL, &xEntryPut);    
+    ulPoolsPut(EP1_RSP_POOL, &xEntryPut);    
 }
 
 void vEcho(void *pArg, uint32_t ulLen) {
     struct PoolEntry xEntryPut;
     xEntryPut.ucLen = ulLen;
     memcpy(xEntryPut.aucData, pArg, xEntryPut.ucLen);
-    ulPoolsPut(RSP_POOL, &xEntryPut);
+    ulPoolsPut(EP1_RSP_POOL, &xEntryPut);
 }
 
 void vSetBootReason(const char *pcReason) {
@@ -259,4 +260,171 @@ pfRequestCb_t xRequestCb[] = {
 #define COUNTOF(x) (sizeof(x)/sizeof(x[0]))
 pfRequestCb_t xGetReqCb(uint32_t ulReqId) {
     return ulReqId <0x41 || ulReqId > (0x40 + COUNTOF(xRequestCb))  ? vDummy : xRequestCb[ulReqId%0x41];    
+}
+
+/*
+ *  I2C 
+ *  
+ **/
+#define CMD_ECHO		    0
+#define CMD_GET_FUNC		1
+#define CMD_SET_DELAY		2
+#define CMD_GET_STATUS		3
+
+#define CMD_I2C_IO		    4
+#define CMD_I2C_IO_BEGIN	(1<<0)
+#define CMD_I2C_IO_END		(1<<1)
+
+
+/* linux kernel flags */
+#define I2C_M_TEN		0x10	/* we have a ten bit chip address */
+#define I2C_M_RD		0x01
+#define I2C_M_NOSTART		0x4000
+#define I2C_M_REV_DIR_ADDR	0x2000
+#define I2C_M_IGNORE_NAK	0x1000
+#define I2C_M_NO_RD_ACK		0x0800
+
+/* To determine what functionality is present */
+#define I2C_FUNC_I2C			0x00000001
+#define I2C_FUNC_10BIT_ADDR		0x00000002
+#define I2C_FUNC_PROTOCOL_MANGLING	0x00000004 /* I2C_M_{REV_DIR_ADDR,NOSTART,..} */
+#define I2C_FUNC_SMBUS_HWPEC_CALC	0x00000008 /* SMBus 2.0 */
+#define I2C_FUNC_SMBUS_READ_WORD_DATA_PEC  0x00000800 /* SMBus 2.0 */
+#define I2C_FUNC_SMBUS_WRITE_WORD_DATA_PEC 0x00001000 /* SMBus 2.0 */
+#define I2C_FUNC_SMBUS_PROC_CALL_PEC	0x00002000 /* SMBus 2.0 */
+#define I2C_FUNC_SMBUS_BLOCK_PROC_CALL_PEC 0x00004000 /* SMBus 2.0 */
+#define I2C_FUNC_SMBUS_BLOCK_PROC_CALL	0x00008000 /* SMBus 2.0 */
+#define I2C_FUNC_SMBUS_QUICK		0x00010000
+#define I2C_FUNC_SMBUS_READ_BYTE	0x00020000
+#define I2C_FUNC_SMBUS_WRITE_BYTE	0x00040000
+#define I2C_FUNC_SMBUS_READ_BYTE_DATA	0x00080000
+#define I2C_FUNC_SMBUS_WRITE_BYTE_DATA	0x00100000
+#define I2C_FUNC_SMBUS_READ_WORD_DATA	0x00200000
+#define I2C_FUNC_SMBUS_WRITE_WORD_DATA	0x00400000
+#define I2C_FUNC_SMBUS_PROC_CALL	0x00800000
+#define I2C_FUNC_SMBUS_READ_BLOCK_DATA	0x01000000
+#define I2C_FUNC_SMBUS_WRITE_BLOCK_DATA 0x02000000
+#define I2C_FUNC_SMBUS_READ_I2C_BLOCK	0x04000000 /* I2C-like block xfer  */
+#define I2C_FUNC_SMBUS_WRITE_I2C_BLOCK	0x08000000 /* w/ 1-byte reg. addr. */
+#define I2C_FUNC_SMBUS_READ_I2C_BLOCK_2	 0x10000000 /* I2C-like block xfer  */
+#define I2C_FUNC_SMBUS_WRITE_I2C_BLOCK_2 0x20000000 /* w/ 2-byte reg. addr. */
+#define I2C_FUNC_SMBUS_READ_BLOCK_DATA_PEC  0x40000000 /* SMBus 2.0 */
+#define I2C_FUNC_SMBUS_WRITE_BLOCK_DATA_PEC 0x80000000 /* SMBus 2.0 */
+
+#define I2C_FUNC_SMBUS_BYTE I2C_FUNC_SMBUS_READ_BYTE | \
+                            I2C_FUNC_SMBUS_WRITE_BYTE
+#define I2C_FUNC_SMBUS_BYTE_DATA I2C_FUNC_SMBUS_READ_BYTE_DATA | \
+                                 I2C_FUNC_SMBUS_WRITE_BYTE_DATA
+#define I2C_FUNC_SMBUS_WORD_DATA I2C_FUNC_SMBUS_READ_WORD_DATA | \
+                                 I2C_FUNC_SMBUS_WRITE_WORD_DATA
+#define I2C_FUNC_SMBUS_BLOCK_DATA I2C_FUNC_SMBUS_READ_BLOCK_DATA | \
+                                  I2C_FUNC_SMBUS_WRITE_BLOCK_DATA
+#define I2C_FUNC_SMBUS_I2C_BLOCK I2C_FUNC_SMBUS_READ_I2C_BLOCK | \
+                                  I2C_FUNC_SMBUS_WRITE_I2C_BLOCK
+
+#define I2C_FUNC_SMBUS_EMUL I2C_FUNC_SMBUS_QUICK | \
+                            I2C_FUNC_SMBUS_BYTE | \
+                            I2C_FUNC_SMBUS_BYTE_DATA | \
+                            I2C_FUNC_SMBUS_WORD_DATA | \
+                            I2C_FUNC_SMBUS_PROC_CALL | \
+                            I2C_FUNC_SMBUS_WRITE_BLOCK_DATA | \
+                            I2C_FUNC_SMBUS_WRITE_BLOCK_DATA_PEC | \
+                            I2C_FUNC_SMBUS_I2C_BLOCK
+
+static const uint32_t prvI2cSupports = I2C_FUNC_I2C | I2C_FUNC_SMBUS_EMUL;
+static uint32_t prvI2cDelay = 10;
+static uint32_t prvI2cStatus = 0;
+
+static void prvI2cRsp(const uint8_t *pucData, uint32_t ulLen) {
+    struct PoolEntry xEntryPut;
+    xEntryPut.ucLen = ulLen;
+    memcpy(xEntryPut.aucData, pucData, xEntryPut.ucLen);
+    ulPoolsPut(I2C_RSP_POOL, &xEntryPut);    
+}
+
+struct i2cPacket {
+    uint16_t usSlaveAddr;
+    uint8_t ucRW;
+    uint8_t ucLen;
+    uint8_t ucData[0];				
+} __attribute__((packed));
+
+struct i2c_cmd {
+    uint8_t ucCmd;
+    union {
+        uint32_t ulCfg;
+        struct i2cPacket xI2cPacket;
+    };
+} __attribute__((packed));
+
+static void prvI2cIO(uint8_t ucCmd, struct i2cPacket *p) {      
+    if(LL_I2C_IsEnabledAutoEndMode(I2C1)){
+        LL_mDelay(1); // Optional. The delay time depends on the slave device. 
+        while(!LL_I2C_IsActiveFlag_STOP(I2C1));   
+        LL_I2C_ClearFlag_STOP(I2C1);         
+    }         
+    
+    if (ucCmd & CMD_I2C_IO_BEGIN) {       
+        LL_I2C_SetSlaveAddr(I2C1, p->usSlaveAddr << 1);
+        LL_I2C_SetMasterAddressingMode(I2C1, LL_I2C_ADDRSLAVE_7BIT);
+        LL_I2C_SetTransferRequest(I2C1, p->ucRW != 'r' ? LL_I2C_REQUEST_WRITE : LL_I2C_REQUEST_READ);
+        LL_I2C_SetTransferSize(I2C1, p->ucLen);         
+        LL_I2C_GenerateStartCondition(I2C1);    
+    }
+    
+    if (ucCmd & CMD_I2C_IO_END) {            
+        LL_I2C_EnableAutoEndMode(I2C1);
+    } else {
+        LL_I2C_DisableAutoEndMode(I2C1);            
+    }    
+    
+    if (LL_I2C_GetTransferRequest(I2C1) == LL_I2C_REQUEST_WRITE) {
+        for (uint32_t i = 0; i < p->ucLen; i++) {
+            LL_I2C_TransmitData8(I2C1, p->ucData[i]);            
+            while (!LL_I2C_IsActiveFlag_TXE(I2C1));
+        }        
+    } else {
+        #define BUF_LEN (16)
+        uint8_t buf[BUF_LEN];
+        for (uint32_t j = 0; j < p->ucLen / BUF_LEN; j++) {
+            for (uint32_t i = 0; i < BUF_LEN; i++) {
+                while (!LL_I2C_IsActiveFlag_RXNE(I2C1)) ;
+                buf[i] = LL_I2C_ReceiveData8(I2C1);
+            }   
+            prvI2cRsp((uint8_t *)&buf, BUF_LEN);
+        }
+        for (uint32_t i = 0; i < p->ucLen % BUF_LEN; i++) {
+            while (!LL_I2C_IsActiveFlag_RXNE(I2C1)) ;
+            buf[i] = LL_I2C_ReceiveData8(I2C1);
+        }   
+        prvI2cRsp((uint8_t *)&buf, p->ucLen % BUF_LEN);
+    } 
+}
+
+
+void vI2cReqCb(void *pvArg, uint32_t ulSize) {
+    struct i2c_cmd *p = (struct i2c_cmd *)pvArg;
+    switch (p->ucCmd) {
+    case CMD_ECHO:
+        prvI2cRsp(&p->ucCmd, 1);
+        break;
+    case CMD_SET_DELAY: 
+        memcpy(&prvI2cDelay, &p->ulCfg, sizeof(prvI2cDelay));
+        prvI2cRsp(&p->ucCmd, 1);
+        break;
+    case CMD_GET_FUNC: 
+        prvI2cRsp((uint8_t *)&prvI2cSupports, sizeof(prvI2cSupports));
+        break;
+    case CMD_GET_STATUS:
+        prvI2cRsp((uint8_t *)&prvI2cStatus, sizeof(prvI2cStatus));
+        break;
+    case CMD_I2C_IO:
+    case CMD_I2C_IO | CMD_I2C_IO_BEGIN:
+    case CMD_I2C_IO | CMD_I2C_IO_END:
+    case CMD_I2C_IO | CMD_I2C_IO_BEGIN | CMD_I2C_IO_END:		 
+        prvI2cIO(p->ucCmd, &p->xI2cPacket);
+        break;
+    default:
+        break;
+    }    
 }

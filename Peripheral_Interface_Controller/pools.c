@@ -16,13 +16,18 @@ static int8_t prvPoolsGetSelect(struct Pool axPools[]) {
 	return -1;
 }
 
-static uint8_t aucReqPoolBuf[128];
-static uint8_t aucRspPoolBuf[128];
-static uint8_t aucNotifyPoolBuf[128];
-static struct Pool prvPool[3] = { 
-    [REQ_POOL] = { aucReqPoolBuf, sizeof(aucReqPoolBuf), 0, 0 },
-    [RSP_POOL] = { aucRspPoolBuf, sizeof(aucRspPoolBuf), 0, 0 },
-    [NOTIFY_POOL] = { aucNotifyPoolBuf, sizeof(aucNotifyPoolBuf), 0, 0 },
+static uint8_t aucEp1ReqPoolBuf[128];
+static uint8_t aucEp1RspPoolBuf[128];
+static uint8_t aucEp1NotifyPoolBuf[128];
+static uint8_t aucCtrlPoolBuf[128];
+static uint8_t aucEp2ReqPoolBuf[128];
+static uint8_t aucEp2RspPoolBuf[128];
+static struct Pool prvPool[5] = { 
+    [EP1_REQ_POOL] = { aucEp1ReqPoolBuf, sizeof(aucEp1ReqPoolBuf), 0, 0 },
+    [EP1_RSP_POOL] = { aucEp1RspPoolBuf, sizeof(aucEp1RspPoolBuf), 0, 0 },
+    [EP1_NOTIFY_POOL] = { aucEp1NotifyPoolBuf, sizeof(aucEp1NotifyPoolBuf), 0, 0 },
+    [I2C_REQ_POOL] = { aucEp2ReqPoolBuf, sizeof(aucEp2ReqPoolBuf), 0, 0 },
+    [I2C_RSP_POOL] = { aucEp2RspPoolBuf, sizeof(aucEp2RspPoolBuf), 0, 0 },
 };
 
 /*********************************************************************

@@ -14,7 +14,7 @@
     <VCProjectVersion>15.0</VCProjectVersion>
     <ProjectGuid>{8D90E97E-602A-4458-A76F-15934282A4B9}</ProjectGuid>
     <BSP_ID>com.sysprogs.arm.stm32</BSP_ID>
-    <BSP_VERSION>4.7R3</BSP_VERSION>
+    <BSP_VERSION>2018.08</BSP_VERSION>
     <InPlaceBSPSubdir />
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
@@ -78,19 +78,30 @@
   <ItemGroup>
     <ClCompile Include="circ_buf.c" />
     <ClCompile Include="button.c" />
-    <ClCompile Include="led.c" />
+    <ClCompile Include="ctrlRequest.c" />
+    <ClCompile Include="led.c">
+      <Optimization Condition="'$(Configuration)|$(Platform)'=='Debug|VisualGDB'">O0</Optimization>
+    </ClCompile>
     <ClCompile Include="notify.c" />
-    <ClCompile Include="main.c" />
+    <ClCompile Include="main.c">
+      <Optimization Condition="'$(Configuration)|$(Platform)'=='Debug|VisualGDB'">O0</Optimization>
+    </ClCompile>
     <ClCompile Include="pools.c" />
     <ClCompile Include="pwrctrl.c" />
-    <ClCompile Include="request.c" />
+    <ClCompile Include="request.c">
+      <Optimization Condition="'$(Configuration)|$(Platform)'=='Debug|VisualGDB'">O0</Optimization>
+    </ClCompile>
     <ClCompile Include="response.c" />
     <ClCompile Include="rtc.c" />
     <ClCompile Include="system_stm32f0xx.c" />
     <ClCompile Include="USB_DEVICE\usbd_conf.c" />
     <ClCompile Include="USB_DEVICE\usbd_desc.c" />
-    <ClCompile Include="USB_DEVICE\usbd_template_if.c" />
-    <ClCompile Include="USB_DEVICE\usbd_template.c" />
+    <ClCompile Include="USB_DEVICE\usbd_template_if.c">
+      <Optimization Condition="'$(Configuration)|$(Platform)'=='Debug|VisualGDB'">O0</Optimization>
+    </ClCompile>
+    <ClCompile Include="USB_DEVICE\usbd_template.c">
+      <Optimization Condition="'$(Configuration)|$(Platform)'=='Debug|VisualGDB'">O0</Optimization>
+    </ClCompile>
     <ClInclude Include="circ_buf.h" />
     <ClInclude Include="button.h" />
     <ClInclude Include="led.h" />
@@ -108,7 +119,9 @@
     <None Include="stm32.props" />
     <ClCompile Include="$(BSP_ROOT)\STM32F0xxxx\StartupFiles\startup_stm32f070x6.c" />
     <ClCompile Include="$(BSP_ROOT)\STM32_USB_Device_Library\Core\Src\usbd_core.c" />
-    <ClCompile Include="$(BSP_ROOT)\STM32_USB_Device_Library\Core\Src\usbd_ctlreq.c" />
+    <ClCompile Include="$(BSP_ROOT)\STM32_USB_Device_Library\Core\Src\usbd_ctlreq.c">
+      <Optimization Condition="'$(Configuration)|$(Platform)'=='Debug|VisualGDB'">O0</Optimization>
+    </ClCompile>
     <ClCompile Include="$(BSP_ROOT)\STM32_USB_Device_Library\Core\Src\usbd_ioreq.c" />
     <ClCompile Include="$(BSP_ROOT)\STM32F0xxxx\STM32F0xx_HAL_Driver\Src\stm32f0xx_hal.c" />
     <ClCompile Include="$(BSP_ROOT)\STM32F0xxxx\STM32F0xx_HAL_Driver\Src\stm32f0xx_hal_adc.c" />

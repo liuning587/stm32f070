@@ -91,7 +91,7 @@
   */
 
 /*---------- -----------*/
-#define USBD_MAX_NUM_INTERFACES     1
+#define USBD_MAX_NUM_INTERFACES     0xFF
 /*---------- -----------*/
 #define USBD_MAX_NUM_CONFIGURATION     1
 /*---------- -----------*/

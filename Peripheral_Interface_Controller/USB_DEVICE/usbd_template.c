@@ -7,20 +7,20 @@
   * @brief   This file provides the HID core functions.
   *
   * @verbatim
-  *      
-  *          ===================================================================      
+  *
+  *          ===================================================================
   *                                TEMPLATE Class  Description
   *          ===================================================================
-  *          
   *
   *
   *
-  *           
-  *      
+  *
+  *
+  *
   * @note     In HS mode and when the DMA is used, all variables and data structures
   *           dealing with the DMA during the transaction process should be 32-bit aligned.
-  *           
-  *      
+  *
+  *
   *  @endverbatim
   *
   ******************************************************************************
@@ -34,14 +34,14 @@
   *
   *        http://www.st.com/software_license_agreement_liberty_v2
   *
-  * Unless required by applicable law or agreed to in writing, software 
-  * distributed under the License is distributed on an "AS IS" BASIS, 
+  * Unless required by applicable law or agreed to in writing, software
+  * distributed under the License is distributed on an "AS IS" BASIS,
   * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
   * See the License for the specific language governing permissions and
   * limitations under the License.
   *
   ******************************************************************************
-  */ 
+  */
 
 /* Includes ------------------------------------------------------------------*/
 #include "usbd_template.h"
@@ -51,104 +51,99 @@
 #define COUNTOF(x)  (sizeof(x)/sizeof(x[0]))
 #define CUSTOM_DATA_EP_IN_PACKET_SIZE   64
 #define CUSTOM_DATA_EP_OUT_PACKET_SIZE  64
+#define CUSTOM_I2C_EP_IN_PACKET_SIZE    64
+#define CUSTOM_I2C_EP_OUT_PACKET_SIZE   64
 /** @addtogroup STM32_USB_DEVICE_LIBRARY
   * @{
   */
 
-
-/** @defgroup USBD_TEMPLATE 
+/** @defgroup USBD_TEMPLATE
   * @brief usbd core module
   * @{
-  */ 
+  */
 
 /** @defgroup USBD_CUSTOM_Private_TypesDefinitions
   * @{
-  */ 
+  */
 /**
   * @}
-  */ 
-
+  */
 
 /** @defgroup USBD_CUSTOM_Private_Defines
   * @{
-  */ 
+  */
 
 /**
   * @}
-  */ 
-
+  */
 
 /** @defgroup USBD_CUSTOM_Private_Macros
   * @{
-  */ 
-                                         
+  */
+
 /**
   * @}
-  */ 
-
-
-
+  */
 
 /** @defgroup USBD_CUSTOM_Private_FunctionPrototypes
   * @{
   */
 
-
-static uint8_t  USBD_CUSTOM_Init (USBD_HandleTypeDef *pdev, 
-                               uint8_t cfgidx);
-
-static uint8_t  USBD_CUSTOM_DeInit (USBD_HandleTypeDef *pdev, 
+static uint8_t  USBD_CUSTOM_Init(USBD_HandleTypeDef *pdev,
                                  uint8_t cfgidx);
 
-static uint8_t  USBD_CUSTOM_Setup (USBD_HandleTypeDef *pdev, 
-                                USBD_SetupReqTypedef *req);
+static uint8_t  USBD_CUSTOM_DeInit(USBD_HandleTypeDef *pdev,
+                                   uint8_t cfgidx);
 
-static uint8_t  *USBD_CUSTOM_GetCfgDesc (uint16_t *length);
+static uint8_t  USBD_CUSTOM_Setup(USBD_HandleTypeDef *pdev,
+                                  USBD_SetupReqTypedef *req);
 
-static uint8_t  *USBD_CUSTOM_GetDeviceQualifierDesc (uint16_t *length);
+static uint8_t  *USBD_CUSTOM_GetCfgDesc(uint16_t *length);
 
-static uint8_t  USBD_CUSTOM_DataIn (USBD_HandleTypeDef *pdev, uint8_t epnum);
+static uint8_t  *USBD_CUSTOM_GetDeviceQualifierDesc(uint16_t *length);
 
-static uint8_t  USBD_CUSTOM_DataOut (USBD_HandleTypeDef *pdev, uint8_t epnum);
+static uint8_t  USBD_CUSTOM_DataIn(USBD_HandleTypeDef *pdev, uint8_t epnum);
 
-static uint8_t  USBD_CUSTOM_EP0_RxReady (USBD_HandleTypeDef *pdev);
+static uint8_t  USBD_CUSTOM_DataOut(USBD_HandleTypeDef *pdev, uint8_t epnum);
 
-static uint8_t  USBD_CUSTOM_EP0_TxReady (USBD_HandleTypeDef *pdev);
+static uint8_t  USBD_CUSTOM_EP0_RxReady(USBD_HandleTypeDef *pdev);
 
-static uint8_t  USBD_CUSTOM_SOF (USBD_HandleTypeDef *pdev);
+static uint8_t  USBD_CUSTOM_EP0_TxReady(USBD_HandleTypeDef *pdev);
 
-static uint8_t  USBD_CUSTOM_IsoINIncomplete (USBD_HandleTypeDef *pdev, uint8_t epnum);
+static uint8_t  USBD_CUSTOM_SOF(USBD_HandleTypeDef *pdev);
 
-static uint8_t  USBD_CUSTOM_IsoOutIncomplete (USBD_HandleTypeDef *pdev, uint8_t epnum);
+static uint8_t  USBD_CUSTOM_IsoINIncomplete(USBD_HandleTypeDef *pdev, uint8_t epnum);
+
+static uint8_t  USBD_CUSTOM_IsoOutIncomplete(USBD_HandleTypeDef *pdev, uint8_t epnum);
 
 /**
   * @}
-  */ 
+  */
 
 /** @defgroup USBD_CUSTOM_Private_Variables
   * @{
-  */ 
+  */
 
-USBD_ClassTypeDef  USBD_CUSTOM_ClassDriver = 
+USBD_ClassTypeDef  USBD_CUSTOM_ClassDriver =
 {
-  USBD_CUSTOM_Init,
-  USBD_CUSTOM_DeInit,
-  USBD_CUSTOM_Setup,
-  USBD_CUSTOM_EP0_TxReady,  
-  USBD_CUSTOM_EP0_RxReady,
-  USBD_CUSTOM_DataIn,
-  USBD_CUSTOM_DataOut,
-  USBD_CUSTOM_SOF,
-  USBD_CUSTOM_IsoINIncomplete,
-  USBD_CUSTOM_IsoOutIncomplete,      
-  USBD_CUSTOM_GetCfgDesc,
-  USBD_CUSTOM_GetCfgDesc, 
-  USBD_CUSTOM_GetCfgDesc,
-  USBD_CUSTOM_GetDeviceQualifierDesc,
+    USBD_CUSTOM_Init,
+    USBD_CUSTOM_DeInit,
+    USBD_CUSTOM_Setup,
+    USBD_CUSTOM_EP0_TxReady,
+    USBD_CUSTOM_EP0_RxReady,
+    USBD_CUSTOM_DataIn,
+    USBD_CUSTOM_DataOut,
+    USBD_CUSTOM_SOF,
+    USBD_CUSTOM_IsoINIncomplete,
+    USBD_CUSTOM_IsoOutIncomplete,
+    USBD_CUSTOM_GetCfgDesc,
+    USBD_CUSTOM_GetCfgDesc,
+    USBD_CUSTOM_GetCfgDesc,
+    USBD_CUSTOM_GetDeviceQualifierDesc,
 };
 
 #if defined ( __ICCARM__ ) /*!< IAR Compiler */
-  #pragma data_alignment=4   
+#pragma data_alignment=4
 #endif
 
 struct usbdEndpointDesc {
@@ -158,7 +153,7 @@ struct usbdEndpointDesc {
     uint8_t bEndpointAddress; /* bEndpointAddress */
     uint8_t bmAttributes; /* bmAttributes: Interrupt */
     uint16_t wMaxPacketSize; /* wMaxPacketSize: */
-    uint8_t bInterval; /* bInterval: */ 
+    uint8_t bInterval; /* bInterval: */
 }__attribute__((packed));
 
 struct usbdCustomIfDesc {
@@ -175,22 +170,21 @@ struct usbdCustomIfDesc {
     uint8_t iInterface; /* iInterface: */
 } __attribute__((packed));
 
+
 struct usbdCustomCfgDesc {
     /*Configuration Descriptors*/
     uint8_t bLength; /* bLength: Configuation Descriptor size */
     uint8_t bDescriptorType; /* bDescriptorType: Configuration */
     uint16_t wTotalLength; /* wTotalLength: Bytes returned */
-    uint8_t bNumInterfaces;/*bNumInterfaces: 1 interface*/
-    uint8_t bConfigurationValue;/*bConfigurationValue: Configuration value*/
-    uint8_t iConfiguration;/*iConfiguration: Index of string descriptor describing the configuration*/
-    uint8_t bmAttributes;/*bmAttributes: D7 Reserved, set to 1. (USB 1.0 Bus Powered), D6 Self Powered, D5 Remote Wakeup, D4..0 Reserved, set to 0.*/
-    uint8_t bMaxPower;/*MaxPower 100 mA: this current is used for detecting Vbus*/ 
+    uint8_t bNumInterfaces; /*bNumInterfaces: 1 interface*/
+    uint8_t bConfigurationValue; /*bConfigurationValue: Configuration value*/
+    uint8_t iConfiguration; /*iConfiguration: Index of string descriptor describing the configuration*/
+    uint8_t bmAttributes; /*bmAttributes: D7 Reserved, set to 1. (USB 1.0 Bus Powered), D6 Self Powered, D5 Remote Wakeup, D4..0 Reserved, set to 0.*/
+    uint8_t bMaxPower; /*MaxPower 100 mA: this current is used for detecting Vbus*/
     struct usbdCustomIfDesc xUsbdCustomIfDesc;
-    struct usbdEndpointDesc xUsbdEp[2];
+    struct usbdEndpointDesc xUsbdEp[USB_EP_COUNT];
 } __attribute__((packed));
 
-#define CUSTOM_OUT_EP 0x01  
-#define CUSTOM_IN_EP 0x81  
 struct usbdCustomCfgDesc xUsbdCustomCfgDesc = {
     /*Configuration Descriptors*/
     .bLength = USB_LEN_CFG_DESC,
@@ -199,71 +193,123 @@ struct usbdCustomCfgDesc xUsbdCustomCfgDesc = {
     .bNumInterfaces = 0x01,
     .bConfigurationValue = 0x01,
     .iConfiguration = 0x00,
-    .bmAttributes =  0xC0, /* Self Powered */  
-    .bMaxPower = 0x32, /* 100mA = 0x32 2mA */ 
+    .bmAttributes = 0xC0,
+    /* Self Powered */
+    .bMaxPower = 0x32,
+    /* 100mA = 0x32 2mA */
     /*Interface Descriptor*/
-    .xUsbdCustomIfDesc = { 
-        .bLength = USB_LEN_IF_DESC, /* bLength: Interface Descriptor size */
-        .bDescriptorType = USB_DESC_TYPE_INTERFACE, /* bDescriptorType: Interface */
-        .bInterfaceNumber = 0x00, /* bInterfaceNumber: Number of Interface */
-        .bAlternateSetting = 0x00, /* bAlternateSetting: Alternate setting */
-        .bNumEndpoints = 0x02, /* bNumEndpoints: One endpoints used */
-        .bInterfaceClass = 0x00, /* bInterfaceClass: Communication Interface Class */
-        .bInterfaceSubClass = 0x00, /* bInterfaceSubClass: Abstract Control Model */
-        .bInterfaceProtocol = 0x00, /* bInterfaceProtocol: Common AT commands */
-        .iInterface = 0x00, /* iInterface: */
-    },
-    .xUsbdEp = { 
-        /*Endpoint OUT Descriptor*/
-        {
-            .bLength = USB_LEN_EP_DESC, /* bLength: Endpoint Descriptor size */
-            .bDescriptorType = USB_DESC_TYPE_ENDPOINT, /* bDescriptorType: Endpoint */
-            .bEndpointAddress = CUSTOM_OUT_EP, /* bEndpointAddress */
-            .bmAttributes = USBD_EP_TYPE_BULK, /* bmAttributes: Interrupt */
-            .wMaxPacketSize = CUSTOM_DATA_EP_OUT_PACKET_SIZE, /* wMaxPacketSize: */
-            .bInterval = 0x00, /* bInterval: */ 
-        },
-        /*Endpoint IN Descriptor*/
-        {
-            .bLength = USB_LEN_EP_DESC, /* bLength: Endpoint Descriptor size */
-            .bDescriptorType = USB_DESC_TYPE_ENDPOINT, /* bDescriptorType: Endpoint */
-            .bEndpointAddress = CUSTOM_IN_EP, /* bEndpointAddress */
-            .bmAttributes = USBD_EP_TYPE_BULK, /* bmAttributes: Interrupt */
-            .wMaxPacketSize = CUSTOM_DATA_EP_IN_PACKET_SIZE, /* wMaxPacketSize: */
-            .bInterval = 0x00, /* bInterval: */ 
-        }
-    },
-    
+    .xUsbdCustomIfDesc = {
+    .bLength = USB_LEN_IF_DESC,
+    /* bLength: Interface Descriptor size */
+    .bDescriptorType = USB_DESC_TYPE_INTERFACE,
+    /* bDescriptorType: Interface */
+    .bInterfaceNumber = 0x00,
+    /* bInterfaceNumber: Number of Interface */
+    .bAlternateSetting = 0x00,
+    /* bAlternateSetting: Alternate setting */
+    .bNumEndpoints = COUNTOF(xUsbdCustomCfgDesc.xUsbdEp),
+    /* bNumEndpoints: One endpoints used */
+    .bInterfaceClass = 0x00,
+    /* bInterfaceClass: Communication Interface Class */
+    .bInterfaceSubClass = 0x00,
+    /* bInterfaceSubClass: Abstract Control Model */
+    .bInterfaceProtocol = 0x00,
+    /* bInterfaceProtocol: Common AT commands */
+    .iInterface = 0x00,
+    /* iInterface: */
+},
+    .xUsbdEp = {
+    /*Endpoint OUT Descriptor*/
+{
+    .bLength = USB_LEN_EP_DESC,
+    /* bLength: Endpoint Descriptor size */
+    .bDescriptorType = USB_DESC_TYPE_ENDPOINT,
+    /* bDescriptorType: Endpoint */
+    .bEndpointAddress = CUSTOM_OUT_EP,
+    /* bEndpointAddress */
+    .bmAttributes = USBD_EP_TYPE_BULK,
+    /* bmAttributes: Interrupt */
+    .wMaxPacketSize = CUSTOM_DATA_EP_OUT_PACKET_SIZE,
+    /* wMaxPacketSize: */
+    .bInterval = 0x00,
+    /* bInterval: */
+},
+    /*Endpoint IN Descriptor*/
+{
+    .bLength = USB_LEN_EP_DESC,
+    /* bLength: Endpoint Descriptor size */
+    .bDescriptorType = USB_DESC_TYPE_ENDPOINT,
+    /* bDescriptorType: Endpoint */
+    .bEndpointAddress = CUSTOM_IN_EP,
+    /* bEndpointAddress */
+    .bmAttributes = USBD_EP_TYPE_BULK,
+    /* bmAttributes: Interrupt */
+    .wMaxPacketSize = CUSTOM_DATA_EP_IN_PACKET_SIZE,
+    /* wMaxPacketSize: */
+    .bInterval = 0x00,
+    /* bInterval: */
+},
+    /*I2C Endpoint OUT Descriptor*/
+{
+    .bLength = USB_LEN_EP_DESC,
+    /* bLength: Endpoint Descriptor size */
+    .bDescriptorType = USB_DESC_TYPE_ENDPOINT,
+    /* bDescriptorType: Endpoint */
+    .bEndpointAddress = I2C_OUT_EP,
+    /* bEndpointAddress */
+    .bmAttributes = USBD_EP_TYPE_BULK,
+    /* bmAttributes: Interrupt */
+    .wMaxPacketSize = CUSTOM_I2C_EP_OUT_PACKET_SIZE,
+    /* wMaxPacketSize: */
+    .bInterval = 0x00,
+    /* bInterval: */
+},
+    /*I2C Endpoint IN Descriptor*/
+{
+    .bLength = USB_LEN_EP_DESC,
+    /* bLength: Endpoint Descriptor size */
+    .bDescriptorType = USB_DESC_TYPE_ENDPOINT,
+    /* bDescriptorType: Endpoint */
+    .bEndpointAddress = I2C_IN_EP,
+    /* bEndpointAddress */
+    .bmAttributes = USBD_EP_TYPE_BULK,
+    /* bmAttributes: Interrupt */
+    .wMaxPacketSize = CUSTOM_I2C_EP_IN_PACKET_SIZE,
+    /* wMaxPacketSize: */
+    .bInterval = 0x00,
+    /* bInterval: */
+}
+},
 };
 
-
-  
 #if defined ( __ICCARM__ ) /*!< IAR Compiler */
-  #pragma data_alignment=4   
+#pragma data_alignment=4
 #endif
 /* USB Standard Device Descriptor */
 static uint8_t USBD_CUSTOM_DeviceQualifierDesc[USB_LEN_DEV_QUALIFIER_DESC] =
 {
-  USB_LEN_DEV_QUALIFIER_DESC,
-  USB_DESC_TYPE_DEVICE_QUALIFIER,
-  0x00,
-  0x02,
-  0x00,
-  0x00,
-  0x00,
-  0x40,
-  0x01,
-  0x00,
+    USB_LEN_DEV_QUALIFIER_DESC,
+    USB_DESC_TYPE_DEVICE_QUALIFIER,
+    0x00,
+    0x02,
+    0x00,
+    0x00,
+    0x00,
+    0x40,
+    0x01,
+    0x00,
 };
 
 /**
   * @}
-  */ 
+  */
 uint8_t prvDataOut[CUSTOM_DATA_EP_OUT_PACKET_SIZE];
 uint8_t prvDataIn[CUSTOM_DATA_EP_IN_PACKET_SIZE];
+uint8_t prvI2cDataOut[CUSTOM_I2C_EP_OUT_PACKET_SIZE];
+uint8_t prvI2cDataIn[CUSTOM_I2C_EP_IN_PACKET_SIZE];
 /** @defgroup USBD_CUSTOM_Private_Functions
   * @{
-  */ 
+  */
 
 /**
   * @brief  USBD_CUSTOM_Init
@@ -273,18 +319,25 @@ uint8_t prvDataIn[CUSTOM_DATA_EP_IN_PACKET_SIZE];
   * @retval status
   */
 static uint8_t  USBD_CUSTOM_Init(USBD_HandleTypeDef *pdev, uint8_t cfgidx) {
+    /* Allocate memory for USBD_CUSTOM_HandleTypeDef */
+    USBD_CUSTOM_HandleTypeDef *hCustom = (USBD_CUSTOM_HandleTypeDef *)USBD_malloc(sizeof(USBD_CUSTOM_HandleTypeDef));
+    pdev->pClassData = hCustom;
+    if (hCustom == NULL) {
+        return USBD_FAIL;
+    }
+
     /* Open EP IN */
     USBD_LL_OpenEP(pdev, CUSTOM_IN_EP, USBD_EP_TYPE_BULK, CUSTOM_DATA_EP_IN_PACKET_SIZE);
     /* Open EP OUT */
     USBD_LL_OpenEP(pdev, CUSTOM_OUT_EP, USBD_EP_TYPE_BULK, CUSTOM_DATA_EP_OUT_PACKET_SIZE);
-    pdev->pClassData = USBD_malloc(sizeof(USBD_CUSTOM_HandleTypeDef));
-    if (pdev->pClassData == NULL) {
-        return USBD_FAIL;
-    } 
-   
-    USBD_CUSTOM_HandleTypeDef   *hCustom = (USBD_CUSTOM_HandleTypeDef*) pdev->pClassData;
+    /* Open I2C EP IN */
+    USBD_LL_OpenEP(pdev, I2C_IN_EP, USBD_EP_TYPE_BULK, CUSTOM_I2C_EP_IN_PACKET_SIZE);
+    /* Open I2C EP OUT */
+    USBD_LL_OpenEP(pdev, I2C_OUT_EP, USBD_EP_TYPE_BULK, CUSTOM_I2C_EP_OUT_PACKET_SIZE);
+
     /* Init  physical Interface components */
     ((USBD_CUSTOM_ItfTypeDef *)pdev->pUserData)->Init();
+
     /* Init Xfer states */
     hCustom->TxState = 0;
     hCustom->TxBuffer = prvDataIn;
@@ -292,7 +345,15 @@ static uint8_t  USBD_CUSTOM_Init(USBD_HandleTypeDef *pdev, uint8_t cfgidx) {
     hCustom->RxBuffer = prvDataOut;
     /* Prepare Out endpoint to receive next packet */
     USBD_LL_PrepareReceive(pdev, CUSTOM_OUT_EP, hCustom->RxBuffer, CUSTOM_DATA_EP_OUT_PACKET_SIZE);
-        
+
+    /* Init I2c EP Xfer states */
+    hCustom->I2cTxState = 0;
+    hCustom->I2cTxBuffer = prvI2cDataIn;
+    hCustom->I2cRxState = 0;
+    hCustom->I2cRxBuffer = prvI2cDataOut;
+    /* Prepare Out endpoint to receive next packet */
+    USBD_LL_PrepareReceive(pdev, I2C_OUT_EP, hCustom->I2cRxBuffer, CUSTOM_I2C_EP_OUT_PACKET_SIZE);
+
     return USBD_OK;
 }
 
@@ -304,16 +365,20 @@ static uint8_t  USBD_CUSTOM_Init(USBD_HandleTypeDef *pdev, uint8_t cfgidx) {
   * @retval status
   */
 static uint8_t  USBD_CUSTOM_DeInit(USBD_HandleTypeDef *pdev, uint8_t cfgidx) {
-    /* Open EP IN */
-    USBD_LL_CloseEP(pdev, CUSTOM_IN_EP);  
-    /* Open EP OUT */
-    USBD_LL_CloseEP(pdev, CUSTOM_OUT_EP);  
-    /* DeInit  physical Interface components */
     if (pdev->pClassData != NULL) {
+        /* Open EP IN */
+        USBD_LL_CloseEP(pdev, CUSTOM_IN_EP);
+        /* Open EP OUT */
+        USBD_LL_CloseEP(pdev, CUSTOM_OUT_EP);
+        /* Open EP IN */
+        USBD_LL_CloseEP(pdev, I2C_IN_EP);
+        /* Open EP OUT */
+        USBD_LL_CloseEP(pdev, I2C_OUT_EP);
+        /* DeInit  physical Interface components */
         ((USBD_CUSTOM_ItfTypeDef *)pdev->pUserData)->DeInit();
         USBD_free(pdev->pClassData);
         pdev->pClassData = NULL;
-    }  
+    }
     return USBD_OK;
 }
 
@@ -324,32 +389,31 @@ static uint8_t  USBD_CUSTOM_DeInit(USBD_HandleTypeDef *pdev, uint8_t cfgidx) {
   * @param  req: usb requests
   * @retval status
   */
-static uint8_t  USBD_CUSTOM_Setup(USBD_HandleTypeDef *pdev, 
-    USBD_SetupReqTypedef *req) {
-    __BKPT(255);
-    return USBD_OK;
+static uint8_t  USBD_CUSTOM_Setup(USBD_HandleTypeDef *pdev, USBD_SetupReqTypedef *req) {
+    USBD_CUSTOM_HandleTypeDef   *hCustom = (USBD_CUSTOM_HandleTypeDef*) pdev->pClassData;
+    return ((USBD_CUSTOM_ItfTypeDef *)pdev->pUserData)->Control(req, sizeof(*req));
 }
 
 /**
-  * @brief  USBD_CUSTOM_GetCfgDesc 
+  * @brief  USBD_CUSTOM_GetCfgDesc
   *         return configuration descriptor
   * @param  length : pointer data length
   * @retval pointer to descriptor buffer
   */
-static uint8_t  *USBD_CUSTOM_GetCfgDesc(uint16_t *length) {    
+static uint8_t  *USBD_CUSTOM_GetCfgDesc(uint16_t *length) {
     *length = xUsbdCustomCfgDesc.wTotalLength;
     return (uint8_t  *)&xUsbdCustomCfgDesc;
 }
 
 /**
-* @brief  DeviceQualifierDescriptor 
+* @brief  DeviceQualifierDescriptor
 *         return Device Qualifier descriptor
 * @param  length : pointer data length
 * @retval pointer to descriptor buffer
 */
-uint8_t  *USBD_CUSTOM_DeviceQualifierDescriptor (uint16_t *length) {
-  *length = sizeof (USBD_CUSTOM_DeviceQualifierDesc);
-  return USBD_CUSTOM_DeviceQualifierDesc;
+uint8_t  *USBD_CUSTOM_DeviceQualifierDescriptor(uint16_t *length) {
+    *length = sizeof(USBD_CUSTOM_DeviceQualifierDesc);
+    return USBD_CUSTOM_DeviceQualifierDesc;
 }
 
 /**
@@ -360,16 +424,26 @@ uint8_t  *USBD_CUSTOM_DeviceQualifierDescriptor (uint16_t *length) {
   * @retval status
   */
 static uint8_t  USBD_CUSTOM_DataIn(USBD_HandleTypeDef *pdev, uint8_t epnum) {
-    USBD_CUSTOM_HandleTypeDef   *hCustom = (USBD_CUSTOM_HandleTypeDef*) pdev->pClassData;  
-    if (pdev->pClassData != NULL) {    
-        hCustom->TxState = 0;
-        return USBD_OK;
-    } else {
+    __IO uint32_t *pTxState;  
+    USBD_CUSTOM_HandleTypeDef   *hCustom = (USBD_CUSTOM_HandleTypeDef*) pdev->pClassData;
+    if (pdev->pClassData == NULL) {
         return USBD_FAIL;
+    } 
+    
+    switch (epnum | 0x80) {
+    case CUSTOM_IN_EP:
+        pTxState = &hCustom->TxState;
+        break;
+    case I2C_IN_EP:
+        pTxState = &hCustom->I2cTxState;
+        break;
+    default:
+        __BKPT(255);
+        break;        
     }
+    *pTxState = 0;
     return USBD_OK;
 }
-
 /**
   * @brief  USBD_CUSTOM_EP0_RxReady
   *         handle EP0 Rx Ready event
@@ -377,14 +451,6 @@ static uint8_t  USBD_CUSTOM_DataIn(USBD_HandleTypeDef *pdev, uint8_t epnum) {
   * @retval status
   */
 static uint8_t  USBD_CUSTOM_EP0_RxReady(USBD_HandleTypeDef *pdev) {
-    USBD_CUSTOM_HandleTypeDef   *hCustom = (USBD_CUSTOM_HandleTypeDef*) pdev->pClassData;
-  
-    if ((pdev->pUserData != NULL) && (hCustom->CmdOpCode != 0xFF)) {
-        ((USBD_CUSTOM_ItfTypeDef *)pdev->pUserData)->Control(hCustom->CmdOpCode,
-                                                          (uint8_t *)hCustom->data,
-                                                          hCustom->CmdLength);
-        hCustom->CmdOpCode = 0xFF; 
-    }
     return USBD_OK;
 }
 /**
@@ -403,8 +469,7 @@ static uint8_t  USBD_CUSTOM_EP0_TxReady(USBD_HandleTypeDef *pdev) {
   * @param  pdev: device instance
   * @retval status
   */
-static uint8_t  USBD_CUSTOM_SOF(USBD_HandleTypeDef *pdev)
-{
+static uint8_t  USBD_CUSTOM_SOF(USBD_HandleTypeDef *pdev) {
     __NOP();
     return USBD_OK;
 }
@@ -416,8 +481,7 @@ static uint8_t  USBD_CUSTOM_SOF(USBD_HandleTypeDef *pdev)
   * @param  epnum: endpoint index
   * @retval status
   */
-static uint8_t  USBD_CUSTOM_IsoINIncomplete(USBD_HandleTypeDef *pdev, uint8_t epnum)
-{
+static uint8_t  USBD_CUSTOM_IsoINIncomplete(USBD_HandleTypeDef *pdev, uint8_t epnum) {
     __BKPT(255);
     return USBD_OK;
 }
@@ -429,9 +493,8 @@ static uint8_t  USBD_CUSTOM_IsoINIncomplete(USBD_HandleTypeDef *pdev, uint8_t ep
   * @param  epnum: endpoint index
   * @retval status
   */
-static uint8_t  USBD_CUSTOM_IsoOutIncomplete (USBD_HandleTypeDef *pdev, uint8_t epnum) {
-
-  return USBD_OK;
+static uint8_t  USBD_CUSTOM_IsoOutIncomplete(USBD_HandleTypeDef *pdev, uint8_t epnum) {
+    return USBD_OK;
 }
 
 /**
@@ -442,24 +505,35 @@ static uint8_t  USBD_CUSTOM_IsoOutIncomplete (USBD_HandleTypeDef *pdev, uint8_t 
   * @retval status
   */
 static uint8_t  USBD_CUSTOM_DataOut(USBD_HandleTypeDef *pdev, uint8_t epnum) {
-    USBD_CUSTOM_HandleTypeDef   *hCustom = (USBD_CUSTOM_HandleTypeDef*) pdev->pClassData;  
+    USBD_CUSTOM_HandleTypeDef   *hCustom = (USBD_CUSTOM_HandleTypeDef*) pdev->pClassData;
     /* Get the received data length */
-    hCustom->RxLength = USBD_LL_GetRxDataSize(pdev, epnum);
-    /* USB data will be immediately processed, this allow next USB traffic being 
+    uint32_t ulDataSize = USBD_LL_GetRxDataSize(pdev, epnum);
+    /* USB data will be immediately processed, this allow next USB traffic being
     NAKed till the end of the application Xfer */
-    if (pdev->pClassData != NULL)  {
-        ((USBD_CUSTOM_ItfTypeDef *)pdev->pUserData)->Receive(hCustom->RxBuffer, &hCustom->RxLength);
-        /* Prepare Out endpoint to receive next packet */
-        hCustom->RxState = 0;
-        USBD_LL_PrepareReceive(pdev, CUSTOM_OUT_EP, hCustom->RxBuffer, CUSTOM_DATA_EP_OUT_PACKET_SIZE);
-        return USBD_OK;
-    }
-    else {
+    if (pdev->pClassData != NULL) {
+        switch (epnum & 0x7F) {
+        case 0x01:
+            ((USBD_CUSTOM_ItfTypeDef *)pdev->pUserData)->Receive(hCustom->RxBuffer, &ulDataSize);
+            /* Prepare Out endpoint to receive next packet */
+            hCustom->RxState = 0;
+            USBD_LL_PrepareReceive(pdev, CUSTOM_OUT_EP, hCustom->RxBuffer, CUSTOM_DATA_EP_OUT_PACKET_SIZE);
+            break;
+        case 0x02:
+            /* Get the received data length */
+            hCustom->I2cRxLength = USBD_LL_GetRxDataSize(pdev, epnum);
+            ((USBD_CUSTOM_ItfTypeDef *)pdev->pUserData)->ReceiveI2cCmd(hCustom->I2cRxBuffer, &ulDataSize);
+            /* Prepare Out endpoint to receive next packet */
+            hCustom->I2cRxState = 0;
+            USBD_LL_PrepareReceive(pdev, I2C_OUT_EP, hCustom->I2cRxBuffer, CUSTOM_I2C_EP_OUT_PACKET_SIZE);
+            break;
+        }        
+    } else {
         return USBD_FAIL;
     }
+    return USBD_OK;
 }
 /**
-* @brief  DeviceQualifierDescriptor 
+* @brief  DeviceQualifierDescriptor
 *         return Device Qualifier descriptor
 * @param  length : pointer data length
 * @retval pointer to descriptor buffer
@@ -477,64 +551,79 @@ uint8_t  *USBD_CUSTOM_GetDeviceQualifierDesc(uint16_t *length) {
   */
 uint8_t  USBD_CUSTOM_RegisterInterface(USBD_HandleTypeDef *pdev, USBD_CUSTOM_ItfTypeDef *fops) {
     uint8_t  ret = USBD_FAIL;
-  
-    if (fops != NULL)
-    {
+
+    if (fops != NULL) {
         pdev->pUserData = fops;
-        ret = USBD_OK;    
-    } 
+        ret = USBD_OK;
+    }
     return ret;
 }
 /**
   * @}
-  */ 
-uint8_t  USBD_CUSTOM_Transmit(USBD_HandleTypeDef *pdev, const uint8_t *pData, uint32_t ulDataSize) {
-    USBD_CUSTOM_HandleTypeDef   *hCustom = (USBD_CUSTOM_HandleTypeDef*) pdev->pClassData;  
-    uint32_t quotient = ulDataSize / CUSTOM_DATA_EP_IN_PACKET_SIZE;
-    uint32_t remainder = ulDataSize % CUSTOM_DATA_EP_IN_PACKET_SIZE;  
+  */
+uint8_t  USBD_CUSTOM_Transmit(USBD_HandleTypeDef *pdev, uint8_t epNum, const uint8_t *pData, uint32_t ulDataSize) {
+    USBD_CUSTOM_HandleTypeDef   *hCustom = (USBD_CUSTOM_HandleTypeDef*) pdev->pClassData;
+    uint32_t ep_in_packet_size;
+    __IO uint32_t *pTxState;
+    uint8_t  **ppTxBuffer;  
+    switch (epNum | 0x80) {
+    case CUSTOM_IN_EP:
+        ep_in_packet_size = CUSTOM_DATA_EP_IN_PACKET_SIZE;
+        pTxState = &hCustom->TxState;
+        ppTxBuffer = &hCustom->TxBuffer;
+        break;
+    case I2C_IN_EP:
+        ep_in_packet_size = CUSTOM_I2C_EP_IN_PACKET_SIZE;
+        pTxState = &hCustom->I2cTxState;
+        ppTxBuffer = &hCustom->I2cTxBuffer;
+        break;
+    default:
+        __BKPT(255);
+        break;        
+    }        
+        
+    uint32_t quotient = ulDataSize / ep_in_packet_size;
+    uint32_t remainder = ulDataSize % ep_in_packet_size;
     uint32_t timeout = 0xFFFF;
     const uint8_t *p = pData;
-    
+
     if (pdev == NULL || hCustom == NULL) {
         return USBD_FAIL;
     }
-    
+
     for (int i = 0; i < quotient; i++) {
         timeout = 0xFFFF;
-        while (hCustom->TxState) {
+        while (*pTxState) {
             if (--timeout == 0) {
-                __BKPT(255);
                 return USBD_FAIL;
             }
         }
-        hCustom->TxState  = 1;
-        memcpy(hCustom->TxBuffer, p, CUSTOM_DATA_EP_IN_PACKET_SIZE);
-        USBD_LL_Transmit(pdev, CUSTOM_IN_EP, hCustom->TxBuffer, CUSTOM_DATA_EP_IN_PACKET_SIZE);
-        p += CUSTOM_DATA_EP_IN_PACKET_SIZE;
+        *pTxState  = 1;
+        memcpy(*ppTxBuffer, p, ep_in_packet_size);
+        USBD_LL_Transmit(pdev, epNum, *ppTxBuffer, ep_in_packet_size);
+        p += ep_in_packet_size;
     }
-    
+
     if (remainder > 0) {
         timeout = 0xFFFF;
-        while (hCustom->TxState) {
+        while (*pTxState) {
             if (--timeout == 0) {
-                __BKPT(255);
                 return USBD_FAIL;
             }
         }
-        hCustom->TxState  = 1;
-        memcpy(hCustom->TxBuffer, p, remainder);
-        USBD_LL_Transmit(pdev, CUSTOM_IN_EP, hCustom->TxBuffer, remainder);
+        *pTxState  = 1;
+        memcpy(*ppTxBuffer, p, remainder);
+        USBD_LL_Transmit(pdev, epNum, *ppTxBuffer, remainder);
     }
     return USBD_OK;
 }
 
 /**
   * @}
-  */ 
-
+  */
 
 /**
   * @}
-  */ 
+  */
 
 /************************ (C) COPYRIGHT STMicroelectronics *****END OF FILE****/

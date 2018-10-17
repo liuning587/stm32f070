@@ -9,5 +9,9 @@
 
 extern USBD_HandleTypeDef USBD_Device;
 void vResponse(void *pArg, uint32_t ulLen) {
-    USBD_CUSTOM_Transmit(&USBD_Device, pArg, ulLen); 
+    USBD_CUSTOM_Transmit(&USBD_Device, CUSTOM_IN_EP, pArg, ulLen); 
+}
+
+void vI2cResponse(void *pArg, uint32_t ulLen) {
+    USBD_CUSTOM_Transmit(&USBD_Device, I2C_IN_EP, pArg, ulLen); 
 }

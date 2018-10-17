@@ -51,7 +51,7 @@ void vRecoveryBtnCb(void) {
         struct PoolEntry xEntryPut;
         xEntryPut.ucLen = sizeof("RECOVERY");
         memcpy(xEntryPut.aucData, "RECOVERY", xEntryPut.ucLen);
-        ulPoolsPut(NOTIFY_POOL, &xEntryPut);
+        ulPoolsPut(EP1_NOTIFY_POOL, &xEntryPut);
         tick = HAL_GetTick();
     }
 }
@@ -94,7 +94,7 @@ void vApBtnCb(void) {
         struct PoolEntry xEntryPut;
         xEntryPut.ucLen = sizeof("AP");
         memcpy(xEntryPut.aucData, "AP", xEntryPut.ucLen);
-        ulPoolsPut(NOTIFY_POOL, &xEntryPut);
+        ulPoolsPut(EP1_NOTIFY_POOL, &xEntryPut);
         tick = HAL_GetTick();
     }
 }
@@ -153,7 +153,7 @@ void vInfoBtnCb(void) {
         struct PoolEntry xEntryPut;
         xEntryPut.ucLen = sizeof("INFO");
         memcpy(xEntryPut.aucData, "INFO", xEntryPut.ucLen);
-        ulPoolsPut(NOTIFY_POOL, &xEntryPut);
+        ulPoolsPut(EP1_NOTIFY_POOL, &xEntryPut);
         tick = HAL_GetTick();
         vSetSysTickCallBack(vGetSysTickCallBack() == prvInfoPinCb ? NULL : prvInfoPinCb);
     }

@@ -82,27 +82,42 @@
   */ 
 typedef struct USBD_CUSTOM_Itf
 {
-  int8_t (* Init)          (void);
-  int8_t (* DeInit)        (void);
-  int8_t (* Control)       (uint8_t, uint8_t * , uint16_t);   
-  int8_t (* Receive)       (uint8_t *, uint32_t *);  
+  int8_t (* Init)			(void);
+  int8_t (* DeInit)			(void);
+  int8_t (* Control)		(void *, uint32_t );
+  int8_t (* Receive)		(uint8_t *, uint32_t *);  
+  int8_t (* ReceiveI2cCmd)	(uint8_t *, uint32_t *);  
 
 } USBD_CUSTOM_ItfTypeDef;
      
-typedef struct
-{
-  uint32_t data[64/4];      /* Force 32bits alignment */
-  uint8_t  CmdOpCode;
-  uint8_t  CmdLength;    
-  uint8_t  *RxBuffer;  
-  uint8_t  *TxBuffer;   
-  uint32_t RxLength;
-  uint32_t TxLength;    
-  
-  __IO uint32_t TxState;     
-  __IO uint32_t RxState;    
-}
-USBD_CUSTOM_HandleTypeDef; 
+typedef struct {
+	uint8_t sa;
+	uint8_t rw;
+	uint8_t txLen;
+	uint8_t rxLen;
+	uint8_t txBuf[64];
+	uint8_t rxBuf[64];
+} I2C_Adapter_HandleTypeDef;  
+
+typedef struct {
+	uint8_t  CmdData[64];
+	uint8_t  CmdOpCode;
+	uint8_t  CmdLength;    
+	
+	uint8_t  *RxBuffer;  
+	uint8_t  *TxBuffer;   
+	uint32_t RxLength;
+	uint32_t TxLength;      
+	__IO uint32_t TxState;     
+	__IO uint32_t RxState;    
+	
+	uint8_t  *I2cRxBuffer;  
+	uint8_t  *I2cTxBuffer;   
+	uint32_t I2cRxLength;
+	uint32_t I2cTxLength;   
+	__IO uint32_t I2cTxState;     
+	__IO uint32_t I2cRxState;  
+} USBD_CUSTOM_HandleTypeDef; 
 
 
 extern USBD_ClassTypeDef  USBD_TEMPLATE_ClassDriver;
@@ -113,8 +128,13 @@ extern USBD_ClassTypeDef  USBD_TEMPLATE_ClassDriver;
 /** @defgroup USB_CORE_Exported_Functions
   * @{
   */
+#define CUSTOM_OUT_EP 0x01
+#define CUSTOM_IN_EP 0x81
+#define I2C_OUT_EP 0x02
+#define I2C_IN_EP 0x82
+#define USB_EP_COUNT 0x04
 uint8_t  USBD_CUSTOM_RegisterInterface(USBD_HandleTypeDef   *pdev, USBD_CUSTOM_ItfTypeDef *fops);
-uint8_t  USBD_CUSTOM_Transmit(USBD_HandleTypeDef *pdev, const uint8_t *pData, uint32_t ulDataSize);
+uint8_t  USBD_CUSTOM_Transmit(USBD_HandleTypeDef *pdev, uint8_t epNum, const uint8_t *pData, uint32_t ulDataSize);
 /**
   * @}
   */ 
