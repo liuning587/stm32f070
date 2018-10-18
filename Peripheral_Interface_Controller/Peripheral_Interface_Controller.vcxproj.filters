@@ -546,9 +546,6 @@
     <ClCompile Include="rtc.c">
       <Filter>Source files</Filter>
     </ClCompile>
-    <ClCompile Include="ctrlRequest.c">
-      <Filter>Source files</Filter>
-    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="USB_DEVICE\usbd_conf.h">

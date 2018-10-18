@@ -78,7 +78,6 @@
   <ItemGroup>
     <ClCompile Include="circ_buf.c" />
     <ClCompile Include="button.c" />
-    <ClCompile Include="ctrlRequest.c" />
     <ClCompile Include="led.c">
       <Optimization Condition="'$(Configuration)|$(Platform)'=='Debug|VisualGDB'">O0</Optimization>
     </ClCompile>

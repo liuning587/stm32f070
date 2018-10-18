@@ -344,10 +344,10 @@ static void prvI2cRsp(const uint8_t *pucData, uint32_t ulLen) {
 #define I2C_M_NOSTART		0x4000	/* if I2C_FUNC_NOSTART */
 #define I2C_M_STOP		    0x8000	/* if I2C_FUNC_PROTOCOL_MANGLING */
 struct i2c_msg {
-    uint16_t addr; /* slave address			*/
+    uint16_t addr;      /* slave address			*/
     uint16_t flags;
-    uint16_t len; /* msg length				*/
-    uint8_t buf[0]; /* pointer to msg data			*/
+    uint16_t len;       /* msg length				*/
+    uint8_t buf[0] __attribute__((aligned(4)));     /* pointer to msg data			*/
 };
 
 struct i2c_cmd {
@@ -358,34 +358,27 @@ struct i2c_cmd {
     };
 } __attribute__((packed));
 
-static void prvI2cIO(uint8_t ucCmd, struct i2c_msg *p) {      
+static void prvI2cIO(struct i2c_msg *p) {    
     if(LL_I2C_IsEnabledAutoEndMode(I2C1)){
         LL_mDelay(1); // Optional. The delay time depends on the slave device. 
         while(!LL_I2C_IsActiveFlag_STOP(I2C1));   
         LL_I2C_ClearFlag_STOP(I2C1);         
     }         
-    
-    if ((p->flags & I2C_M_NOSTART) == 0x00) {       
-        LL_I2C_SetSlaveAddr(I2C1, p->addr << 1);
-        LL_I2C_SetMasterAddressingMode(I2C1, p->flags & I2C_M_TEN ? LL_I2C_ADDRSLAVE_10BIT : LL_I2C_ADDRSLAVE_7BIT);
-        LL_I2C_SetTransferRequest(I2C1, p->flags & I2C_M_RD ? LL_I2C_REQUEST_READ : LL_I2C_REQUEST_WRITE);
-        LL_I2C_SetTransferSize(I2C1, p->len);         
-        LL_I2C_GenerateStartCondition(I2C1);    
-    }
-    
-    if (p->flags & I2C_M_STOP) {            
-        LL_I2C_EnableAutoEndMode(I2C1);
-    } else {
-        LL_I2C_DisableAutoEndMode(I2C1);            
-    }    
-    
+      
+    LL_I2C_SetSlaveAddr(I2C1, p->addr << 1);
+    LL_I2C_SetMasterAddressingMode(I2C1, p->flags & I2C_M_TEN ? LL_I2C_ADDRSLAVE_10BIT : LL_I2C_ADDRSLAVE_7BIT);
+    LL_I2C_SetTransferRequest(I2C1, p->flags & I2C_M_RD ? LL_I2C_REQUEST_READ : LL_I2C_REQUEST_WRITE);
+    LL_I2C_SetTransferSize(I2C1, p->len);         
+    LL_I2C_GenerateStartCondition(I2C1);    
+    LL_I2C_EnableAutoEndMode(I2C1);
+        
     if (LL_I2C_GetTransferRequest(I2C1) == LL_I2C_REQUEST_WRITE) {
         for (uint32_t i = 0; i < p->len; i++) {
             LL_I2C_TransmitData8(I2C1, p->buf[i]);            
             while (!LL_I2C_IsActiveFlag_TXE(I2C1));
         }        
     } else {
-        #define BUF_LEN (16)
+        #define BUF_LEN (64)
         uint8_t buf[BUF_LEN];
         for (uint32_t j = 0; j < p->len / BUF_LEN; j++) {
             for (uint32_t i = 0; i < BUF_LEN; i++) {
@@ -423,7 +416,7 @@ void vI2cReqCb(void *pvArg, uint32_t ulSize) {
     case CMD_I2C_IO | CMD_I2C_IO_BEGIN:
     case CMD_I2C_IO | CMD_I2C_IO_END:
     case CMD_I2C_IO | CMD_I2C_IO_BEGIN | CMD_I2C_IO_END:		 
-        prvI2cIO(p->ucCmd, &p->xI2cMsg);
+        prvI2cIO(&p->xI2cMsg);
         break;
     default:
         break;
