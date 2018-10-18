@@ -257,11 +257,11 @@ struct usbdCustomCfgDesc xUsbdCustomCfgDesc = {
     /* bDescriptorType: Endpoint */
     .bEndpointAddress = I2C_OUT_EP,
     /* bEndpointAddress */
-    .bmAttributes = USBD_EP_TYPE_BULK,
+    .bmAttributes = USBD_EP_TYPE_INTR,
     /* bmAttributes: Interrupt */
     .wMaxPacketSize = CUSTOM_I2C_EP_OUT_PACKET_SIZE,
     /* wMaxPacketSize: */
-    .bInterval = 0x00,
+    .bInterval = 0x10,
     /* bInterval: */
 },
     /*I2C Endpoint IN Descriptor*/
@@ -272,11 +272,11 @@ struct usbdCustomCfgDesc xUsbdCustomCfgDesc = {
     /* bDescriptorType: Endpoint */
     .bEndpointAddress = I2C_IN_EP,
     /* bEndpointAddress */
-    .bmAttributes = USBD_EP_TYPE_BULK,
+    .bmAttributes = USBD_EP_TYPE_INTR,
     /* bmAttributes: Interrupt */
     .wMaxPacketSize = CUSTOM_I2C_EP_IN_PACKET_SIZE,
     /* wMaxPacketSize: */
-    .bInterval = 0x00,
+    .bInterval = 0x10,
     /* bInterval: */
 }
 },
@@ -331,9 +331,9 @@ static uint8_t  USBD_CUSTOM_Init(USBD_HandleTypeDef *pdev, uint8_t cfgidx) {
     /* Open EP OUT */
     USBD_LL_OpenEP(pdev, CUSTOM_OUT_EP, USBD_EP_TYPE_BULK, CUSTOM_DATA_EP_OUT_PACKET_SIZE);
     /* Open I2C EP IN */
-    USBD_LL_OpenEP(pdev, I2C_IN_EP, USBD_EP_TYPE_BULK, CUSTOM_I2C_EP_IN_PACKET_SIZE);
+    USBD_LL_OpenEP(pdev, I2C_IN_EP, USBD_EP_TYPE_INTR, CUSTOM_I2C_EP_IN_PACKET_SIZE);
     /* Open I2C EP OUT */
-    USBD_LL_OpenEP(pdev, I2C_OUT_EP, USBD_EP_TYPE_BULK, CUSTOM_I2C_EP_OUT_PACKET_SIZE);
+    USBD_LL_OpenEP(pdev, I2C_OUT_EP, USBD_EP_TYPE_INTR, CUSTOM_I2C_EP_OUT_PACKET_SIZE);
 
     /* Init  physical Interface components */
     ((USBD_CUSTOM_ItfTypeDef *)pdev->pUserData)->Init();
