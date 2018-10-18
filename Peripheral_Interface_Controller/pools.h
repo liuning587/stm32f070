@@ -21,9 +21,11 @@ struct PoolEntry {
  * the parameter axPools is an array of Pool_t
  * for ulPoolGet(), if not only one pool has data, the frist pool is selected (axPools[0] first, then [1], [2], ...)
  */
-#define	REQ_POOL	0	/* requests */
-#define	RSP_POOL	1	/* requests */
-#define	NOTIFY_POOL	2	/* response */
+#define	EP1_REQ_POOL	0	/* requests */
+#define	EP1_RSP_POOL	1	/* requests */
+#define	EP1_NOTIFY_POOL	2	/* response */
+#define	I2C_REQ_POOL	3	/* requests */
+#define	I2C_RSP_POOL	4	/* requests */
 
 void vPoolsInit(void);
 uint32_t ulPoolsGet(uint32_t ulIdx, struct PoolEntry *pxEntry);

@@ -14,6 +14,11 @@
     <MaskInterruptsWhileStepping>false</MaskInterruptsWhileStepping>
     <MemoryWindowPreferences>
       <MemoryWindowPreferences>
+        <ExpressionHistory>
+          <string>p</string>
+          <string>pArg</string>
+          <string>i2c_cmd</string>
+        </ExpressionHistory>
         <SymbolicMode>true</SymbolicMode>
         <TakeAddressMode>false</TakeAddressMode>
         <Format>

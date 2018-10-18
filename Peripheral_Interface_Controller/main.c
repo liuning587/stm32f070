@@ -8,6 +8,7 @@
 #include "stm32f0xx_ll_bus.h"
 #include "stm32f0xx_ll_exti.h"
 #include "stm32f0xx_ll_rtc.h"
+#include "stm32f0xx_ll_i2c.h"
 #include <usbd_core.h>
 #include <usbd_template.h>
 #include <usbd_desc.h>
@@ -43,7 +44,7 @@ void vSysClkConfig(void) {
     if (LL_FLASH_GetLatency() != LL_FLASH_LATENCY_1) {
         Error_Handler();  
     }
-    
+        
     LL_RCC_HSE_Enable();
 
     /* Wait till HSE is ready */
@@ -83,12 +84,12 @@ static void prvWaitFirstReqFromHost(void) {
     struct PoolEntry xReqPoolEntry, xRspPoolEntry;   
     do {
         __WFI();        
-    } while (ulPoolsGet(REQ_POOL, (struct PoolEntry*)&xReqPoolEntry) == 0);
+    } while (ulPoolsGet(EP1_REQ_POOL, (struct PoolEntry*)&xReqPoolEntry) == 0);
     uint32_t len = xReqPoolEntry.ucLen;
     uint32_t reqId = xReqPoolEntry.aucData[0];
     uint8_t *pArg = &xReqPoolEntry.aucData[1];
     xGetReqCb(reqId)(pArg, len - 1);  
-    while (ulPoolsGet(RSP_POOL, (struct PoolEntry*)&xRspPoolEntry)) {        
+    while (ulPoolsGet(EP1_RSP_POOL, (struct PoolEntry*)&xRspPoolEntry)) {        
         vResponse(xRspPoolEntry.aucData, xRspPoolEntry.ucLen);     
     } 
 }
@@ -111,8 +112,40 @@ static void prvSetBootReason(void) {
     }       
 }
 
-void RTC_IRQHandler(void) {
-    __BKPT(255);
+static void prvI2CInit(void) {
+    LL_AHB1_GRP1_EnableClock(LL_AHB1_GRP1_PERIPH_GPIOB);
+
+    LL_GPIO_InitTypeDef GPIO_InitStruct;
+    LL_GPIO_StructInit(&GPIO_InitStruct);
+    GPIO_InitStruct.Mode = LL_GPIO_MODE_ALTERNATE;
+    GPIO_InitStruct.Speed = LL_GPIO_SPEED_FREQ_HIGH;
+    GPIO_InitStruct.OutputType = LL_GPIO_OUTPUT_OPENDRAIN;
+    GPIO_InitStruct.Pull = LL_GPIO_PULL_UP;
+    GPIO_InitStruct.Alternate = LL_GPIO_AF_1;
+
+    GPIO_InitStruct.Pin = LL_GPIO_PIN_8;
+    LL_GPIO_Init(GPIOB, &GPIO_InitStruct);
+
+    GPIO_InitStruct.Pin = LL_GPIO_PIN_9;
+    LL_GPIO_Init(GPIOB, &GPIO_InitStruct);    
+    
+    LL_APB1_GRP1_EnableClock(LL_APB1_GRP1_PERIPH_I2C1);
+
+    LL_I2C_EnableClockStretching(I2C1);  
+    LL_I2C_DisableOwnAddress1(I2C1);
+    LL_I2C_DisableOwnAddress2(I2C1);
+    LL_I2C_DisableGeneralCall(I2C1);
+    LL_I2C_InitTypeDef I2C_InitStruct = {    
+        .PeripheralMode = LL_I2C_MODE_I2C,
+        .Timing = 0x200090E,//0x20303E5D,
+        .AnalogFilter = LL_I2C_ANALOGFILTER_ENABLE,
+        .DigitalFilter = 0,
+        .OwnAddress1 = 0,
+        .TypeAcknowledge = LL_I2C_ACK,
+        .OwnAddrSize = LL_I2C_OWNADDRESS1_7BIT,
+    };
+    LL_I2C_Init(I2C1, &I2C_InitStruct);
+    LL_I2C_DisableAutoEndMode(I2C1); 
 }
 
 extern void vPwrCtrlInit(void);
@@ -129,42 +162,55 @@ static void prvMspInit(void) {
 }
 
 static void prvBspInit(void) {
-    vSysClkConfig();
-    vPwrCtrlInit();       
+    vSysClkConfig();	
     vLedInit();
     vRtcInit();
     vApBtnInit();
     vInfoBtnInit();
-    vRecoveryBtnInit();   
-    prvUsbDeviceInit(); 
+    vRecoveryBtnInit();        
+    prvI2CInit();   	
+    vPwrCtrlInit(); 		
+    prvUsbDeviceInit();   
+    /* Enable Systick interrupt */
+	LL_SYSTICK_EnableIT();
 }
 
 int main(void) {
     /* Hardware Init */
-    prvMspInit();
+    prvMspInit();	
     prvBspInit();
     /* Application Init */
     vPoolsInit();     
     /* Application Start */
     prvSetBootReason();  
-    prvWaitFirstReqFromHost();        
+//    prvWaitFirstReqFromHost();        
     /* Enable Btn Irq */
-    vRecoveryBtnEnableIrq(ENABLE);
-    vInfoBtnEnableIrq(ENABLE);
-    vApBtnEnableIrq(ENABLE);
+//    vRecoveryBtnEnableIrq(ENABLE);
+//    vInfoBtnEnableIrq(ENABLE);
+//    vApBtnEnableIrq(ENABLE);
 	for (;;) { /* main loop */    	    	
-    	__WFI();   
-    	struct PoolEntry xReqPoolEntry, xRspPoolEntry, xNotifyPoolEntry; 	
-    	while (ulPoolsGet(REQ_POOL, (struct PoolEntry*)&xReqPoolEntry)) {        	
+        __WFI();   
+    	struct PoolEntry xReqPoolEntry, xRspPoolEntry, xNotifyPoolEntry, xCtrlReqPoolEntry; 	
+		
+        while (ulPoolsGet(I2C_REQ_POOL, (struct PoolEntry*)&xCtrlReqPoolEntry)) {        	
+            extern void vI2cReqCb(void *pvArg, uint32_t ulSize);
+            vI2cReqCb((void *)xCtrlReqPoolEntry.aucData, xCtrlReqPoolEntry.ucLen);
+            while (ulPoolsGet(I2C_RSP_POOL, (struct PoolEntry*)&xRspPoolEntry)) {        
+        	    vI2cResponse(xRspPoolEntry.aucData, xRspPoolEntry.ucLen);     
+    	    } 
+    	} 
+
+    	while (ulPoolsGet(EP1_REQ_POOL, (struct PoolEntry*)&xReqPoolEntry)) {        	
         	uint32_t len = xReqPoolEntry.ucLen;
         	uint32_t reqId = xReqPoolEntry.aucData[0];
         	uint8_t *pArg = &xReqPoolEntry.aucData[1];
         	xGetReqCb(reqId)(pArg, len - 1);        	
-    	    while (ulPoolsGet(RSP_POOL, (struct PoolEntry*)&xRspPoolEntry)) {        
+    	    while (ulPoolsGet(EP1_RSP_POOL, (struct PoolEntry*)&xRspPoolEntry)) {        
         	    vResponse(xRspPoolEntry.aucData, xRspPoolEntry.ucLen);     
     	    } 
     	} 
-    	if (ulPoolsGet(NOTIFY_POOL, (struct PoolEntry*)&xNotifyPoolEntry)) {        
+    	
+    	if (ulPoolsGet(EP1_NOTIFY_POOL, (struct PoolEntry*)&xNotifyPoolEntry)) {        
         	vNotify(xNotifyPoolEntry.aucData, xNotifyPoolEntry.ucLen);     
     	}
 	}
@@ -173,17 +219,23 @@ int main(void) {
 static void prvDefualtSysTick(void) {
     switch (HAL_GetTick() % 3000) {
     case 0:
-        LL_GPIO_SetOutputPin(GPIOA, LL_GPIO_PIN_5);
-        break;
-    case 30:
         LL_GPIO_ResetOutputPin(GPIOA, LL_GPIO_PIN_5);
+        break;
+    case 200:
+        LL_GPIO_SetOutputPin(GPIOA, LL_GPIO_PIN_5);
         break;   
-    case 120:
-        LL_GPIO_SetOutputPin(GPIOA, LL_GPIO_PIN_5);
-        break;
-    case 150:
+    case 300:
         LL_GPIO_ResetOutputPin(GPIOA, LL_GPIO_PIN_5);
+        break;
+    case 500:
+        LL_GPIO_SetOutputPin(GPIOA, LL_GPIO_PIN_5);
         break;  
+    case 600:
+        LL_GPIO_ResetOutputPin(GPIOA, LL_GPIO_PIN_5);
+        break;
+    case 800:
+        LL_GPIO_SetOutputPin(GPIOA, LL_GPIO_PIN_5);
+        break; 
     }
 }
 
