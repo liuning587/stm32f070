@@ -75,7 +75,7 @@ void vPwrCtrlInit(void) {
     
     vPwrCtrlRasberryPi(PWR_ON);
     vPwrCtrlUsbHub(PWR_ON);
-    vPwrCtrlEpd(PWR_OFF);
-    vPwrCtrlExtUsbDev1(PWR_OFF);
-    vPwrCtrlExtUsbDev2(PWR_OFF);
+    vPwrCtrlEpd(PWR_ON);
+    vPwrCtrlExtUsbDev1(PWR_ON);
+    vPwrCtrlExtUsbDev2(PWR_ON);
 }
