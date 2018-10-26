@@ -22,7 +22,7 @@ static void prvRsp(const char *pcStr) {
     struct PoolEntry xEntryPut;
     xEntryPut.ucLen = strlen(pcStr) + 1;
     memcpy(xEntryPut.aucData, pcStr, xEntryPut.ucLen);
-    ulPoolsPut(EP1_RSP_POOL, &xEntryPut);    
+    ulPoolsPut(EP1_RSP_POOL, &xEntryPut);
 }
 
 void vEcho(void *pArg, uint32_t ulLen) {
@@ -40,38 +40,51 @@ void vGetBootReason(void *pArg, uint32_t ulLen) {
     prvRsp(aucBootReason);
 }
 
-void vSetPwr(void *pArg, uint32_t ulLen) {
-    vPwrCtrlUsbHub(PWR_OFF);
-    vPwrCtrlRasberryPi(PWR_OFF);
-    vPwrCtrlEpd(PWR_OFF);
-    vPwrCtrlExtUsbDev1(PWR_OFF);
-    vPwrCtrlExtUsbDev2(PWR_OFF);
-    
-    /*  
+void vEnterLPM(void *pArg, uint32_t ulLen) {
+    /* check if an alarm is present? */
+    if (LL_RTC_IsEnabledIT_ALRA(RTC) == 0) {
+        return;
+    }
+
+    for (int delay = atoi(pArg); delay > 0; delay--) {
+        __WFI();
+    }
+
+    /* DeInit usb device */
+    USBD_DeInit(&USBD_Device);
+
+    /* */
+
+    /*
      *  The Following Wakeup sequence is highly recommended prior to each Standby mode entry
      *  mainly  when using more than one wakeup source this is to not miss any wakeup event.
      *  - Disable all used wakeup sources,
-     *  - Clear all related wakeup flags, 
+     *  - Clear all related wakeup flags,
      *  - Re-enable all used wakeup sources,
      *  - Enter the Standby mode.
-     */    
-    
+     */
+
     /* Enable PWR clock */
     LL_APB1_GRP1_EnableClock(LL_APB1_GRP1_PERIPH_PWR);
-  
-    /* Disable all used wakeup sources: WKUP pin */
-    LL_PWR_DisableWakeUpPin(LL_PWR_WAKEUP_PIN1);    // Btn Int Pin
-    LL_PWR_DisableWakeUpPin(LL_PWR_WAKEUP_PIN2);    // Bat Int Pin
 
+    /* Disable all used wakeup sources: WKUP pin */
+    LL_PWR_DisableWakeUpPin(LL_PWR_WAKEUP_PIN1);      // Btn Int Pin
+    LL_PWR_DisableWakeUpPin(LL_PWR_WAKEUP_PIN2);      // Bat Int Pin
 
     /* Clear all related wakeup flags */
     LL_PWR_ClearFlag_WU();
-   
-    /* Re-enable all used wakeup sources */
-    LL_PWR_EnableWakeUpPin(LL_PWR_WAKEUP_PIN1); 
-    LL_PWR_EnableWakeUpPin(LL_PWR_WAKEUP_PIN2); 
 
-    
+    /* Re-enable all used wakeup sources */
+    LL_PWR_EnableWakeUpPin(LL_PWR_WAKEUP_PIN1);
+    LL_PWR_EnableWakeUpPin(LL_PWR_WAKEUP_PIN2);
+
+    /* Power Off all */
+    vPwrCtrlExtUsbDev1(PWR_OFF);
+    vPwrCtrlExtUsbDev2(PWR_OFF);
+    vPwrCtrlEpd(PWR_OFF);
+    vPwrCtrlUsbHub(PWR_OFF);
+    vPwrCtrlRasberryPi(PWR_OFF);
+
     /* Enter the Standby mode */
     {
         /* Select STANDBY mode */
@@ -84,25 +97,23 @@ void vSetPwr(void *pArg, uint32_t ulLen) {
 }
 
 void vSetEpdPwr(void *pArg, uint32_t ulLen) {
-    if(*(uint8_t *)pArg == 0)
-        vPwrCtrlEpd(PWR_OFF);
-    else
+    if (*(uint8_t *)pArg == 0)
+        vPwrCtrlEpd(PWR_OFF); else
         vPwrCtrlEpd(PWR_ON);
 }
 
-
 void vGetTime(void *pArg, uint32_t ulLen) {
     char str[32];
-    sprintf(str, "%08X\r\n", (int)LL_RTC_TIME_Get(RTC));    
-    prvRsp(str);   
+    sprintf(str, "%08X\r\n", (int)LL_RTC_TIME_Get(RTC));
+    prvRsp(str);
 }
 
-/* 
- * quick ascii string to hex value 
- * note: only for 8 character hex vale 
+/*
+ * quick ascii string to hex value
+ * note: only for 8 character hex vale
  **/
 uint32_t ascii2bcd(char *cHexStr, uint32_t ulLen) {
-   #define NUMB_COUNT  10
+#define NUMB_COUNT  10
     const uint8_t numb[NUMB_COUNT] = { '0', '1', '2', '3', '4', '5', '6', '7', '8', '9' };
     uint8_t digits[8];
     uint8_t *pDgits = &digits[0];
@@ -118,7 +129,7 @@ uint32_t ascii2bcd(char *cHexStr, uint32_t ulLen) {
             break;
         pDgits++;
     }
-        
+
     uint32_t loops = pDgits - &digits[0];
     uint32_t ret = 0;
     for (uint32_t i = 0; i < loops; i++) {
@@ -128,27 +139,26 @@ uint32_t ascii2bcd(char *cHexStr, uint32_t ulLen) {
     return ret;
 }
 
-
 void vSetTime(void *pArg, uint32_t ulLen) {
-	int32_t time = ascii2bcd((char *)pArg, ulLen);
+    int32_t time = ascii2bcd((char *)pArg, ulLen);
 
-    LL_RTC_TimeTypeDef RTC_TimeStruct;        
+    LL_RTC_TimeTypeDef RTC_TimeStruct;
     RTC_TimeStruct.TimeFormat = LL_RTC_HOURFORMAT_24HOUR;
     RTC_TimeStruct.Hours = __LL_RTC_GET_HOUR(time);
     RTC_TimeStruct.Minutes = __LL_RTC_GET_MINUTE(time);
     RTC_TimeStruct.Seconds = __LL_RTC_GET_SECOND(time);
     LL_RTC_TIME_Init(RTC, LL_RTC_FORMAT_BCD, &RTC_TimeStruct);
-    
+
     LL_PWR_EnableBkUpAccess();
-    LL_RTC_TIME_Init(RTC, LL_RTC_FORMAT_BCD, &RTC_TimeStruct); 
+    LL_RTC_TIME_Init(RTC, LL_RTC_FORMAT_BCD, &RTC_TimeStruct);
 
     LL_PWR_DisableBkUpAccess();
-    
+
     if (LL_RTC_TIME_Get(RTC) == time) {
-        prvRsp("ACK");        
+        prvRsp("ACK");
     } else {
-        prvRsp("NACK");                
-    }    
+        prvRsp("NACK");
+    }
 }
 
 //#define LL_RTC_WEEKDAY_MONDAY              ((uint8_t)0x01U) /*!< Monday    */
@@ -175,33 +185,33 @@ void vSetTime(void *pArg, uint32_t ulLen) {
 void vGetDate(void *pArg, uint32_t ulLen) {
     char str[32];
     sprintf(str, "%08X\r\n", (int)LL_RTC_DATE_Get(RTC));
-    prvRsp(str);   
+    prvRsp(str);
 }
 
 void vSetDate(void *pArg, uint32_t ulLen) {
     uint32_t date = ascii2bcd((char *)pArg, ulLen);
-    
+
     LL_RTC_DateTypeDef RTC_DateStruct;
     RTC_DateStruct.WeekDay = __LL_RTC_GET_WEEKDAY(date);
     RTC_DateStruct.Month = __LL_RTC_GET_MONTH(date);
     RTC_DateStruct.Day = __LL_RTC_GET_DAY(date);
     RTC_DateStruct.Year = __LL_RTC_GET_YEAR(date);
-    
+
     LL_PWR_EnableBkUpAccess();
-    LL_RTC_DATE_Init(RTC, LL_RTC_FORMAT_BCD, &RTC_DateStruct);  
+    LL_RTC_DATE_Init(RTC, LL_RTC_FORMAT_BCD, &RTC_DateStruct);
     LL_PWR_DisableBkUpAccess();
 
     if (LL_RTC_DATE_Get(RTC) == date) {
-        prvRsp("ACK");        
+        prvRsp("ACK");
     } else {
-        prvRsp("NACK");                
-    }   
+        prvRsp("NACK");
+    }
 }
 
 void vGetAlarm(void *pArg, uint32_t ulLen) {
     char str[32];
     sprintf(str, "%08X\r\n", (int)LL_RTC_ALMA_GetTime(RTC));
-    prvRsp(str);   
+    prvRsp(str);
 }
 
 void vSetAlarm(void *pArg, uint32_t ulLen) {
@@ -216,55 +226,66 @@ void vSetAlarm(void *pArg, uint32_t ulLen) {
     LL_PWR_EnableBkUpAccess();
     /* Step 1. Disable the RTC registers Write protection */
     LL_RTC_DisableWriteProtection(RTC);
-    /* Step 2. Disable alarm A*/       
+    /* Step 2. Disable alarm A*/
     LL_RTC_ALMA_Disable(RTC);
     /* Step 3. Check that the RTC_ALRMAR register can be accessed*/
     while (LL_RTC_IsActiveFlag_ALRAW(RTC) == 0) ;
-    /* Step 4. Configure the alarm */   
+    /* Step 4. Configure the alarm */
     LL_RTC_ALMA_DisableWeekday(RTC);
     LL_RTC_ALMA_SetMask(RTC, LL_RTC_ALMA_MASK_DATEWEEKDAY);
-    LL_RTC_ALMA_ConfigTime(RTC, format12_24, hh, mm, ss);    
+    LL_RTC_ALMA_ConfigTime(RTC, format12_24, hh, mm, ss);
     /* Step 5. Re-enable alarm A & Enable alarm interrupt */
-    LL_RTC_ALMA_Enable(RTC); 
+    LL_RTC_ALMA_Enable(RTC);
     LL_RTC_EnableIT_ALRA(RTC);
     /* Step 6. Enable the RTC registers Write protection*/
-    LL_RTC_EnableWriteProtection(RTC); 
+    LL_RTC_EnableWriteProtection(RTC);
     /* Don't allow access to Backup */
     LL_PWR_DisableBkUpAccess();
-    
-    prvRsp("ACK");        
+
+    prvRsp("ACK");
 }
 
 void vSetLed(void *pArg, uint32_t ulLen) {
-    prvRsp(__FUNCTION__);     
+    prvRsp(__FUNCTION__);
 }
 
 void vDummy(void *pArg, uint32_t ulLen) {
-    prvRsp(__FUNCTION__);   
+    prvRsp(__FUNCTION__);
 }
 
-pfRequestCb_t xRequestCb[] = { 
-        vEcho,          //A
-        vGetBootReason, //B
-        vSetPwr,        //C
-        vSetEpdPwr,     //D
-        vGetTime,       //E
-        vSetTime,       //F
-        vGetDate,       //G
-        vSetDate,       //H
-        vGetAlarm,      //I
-        vSetAlarm,      //J
-        vSetLed,
+pfRequestCb_t xRequestCb[] = {
+    // A
+    vEcho,
+    // B
+    vGetBootReason,
+    // C
+    vEnterLPM,
+    // D
+    vSetEpdPwr,
+    // E
+    vGetTime,
+    // F
+    vSetTime,
+    // G
+    vGetDate,
+    // H
+    vSetDate,
+    // I
+    vGetAlarm,
+    // J
+    vSetAlarm,
+    // K
+    vSetLed,
 };
 
 #define COUNTOF(x) (sizeof(x)/sizeof(x[0]))
 pfRequestCb_t xGetReqCb(uint32_t ulReqId) {
-    return ulReqId <0x41 || ulReqId > (0x40 + COUNTOF(xRequestCb))  ? vDummy : xRequestCb[ulReqId%0x41];    
+    return ulReqId <0x41 || ulReqId > (0x40 + COUNTOF(xRequestCb))  ? vDummy : xRequestCb[ulReqId % 0x41];
 }
 
 /*
- *  I2C 
- *  
+ *  I2C
+ *
  **/
 #define CMD_ECHO		    0
 #define CMD_GET_FUNC		1
@@ -274,8 +295,6 @@ pfRequestCb_t xGetReqCb(uint32_t ulReqId) {
 #define CMD_I2C_IO		    4
 #define CMD_I2C_IO_BEGIN	(1<<0)
 #define CMD_I2C_IO_END		(1<<1)
-
-
 
 /* To determine what functionality is present */
 #define I2C_FUNC_I2C			0x00000001
@@ -332,7 +351,7 @@ static void prvI2cRsp(const uint8_t *pucData, uint32_t ulLen) {
     struct PoolEntry xEntryPut;
     xEntryPut.ucLen = ulLen;
     memcpy(xEntryPut.aucData, pucData, xEntryPut.ucLen);
-    ulPoolsPut(I2C_RSP_POOL, &xEntryPut);    
+    ulPoolsPut(I2C_RSP_POOL, &xEntryPut);
 }
 
 #define I2C_M_RD		    0x0001	/* read data, from slave to master, I2C_M_RD is guaranteed to be 0x0001! */
@@ -344,10 +363,10 @@ static void prvI2cRsp(const uint8_t *pucData, uint32_t ulLen) {
 #define I2C_M_NOSTART		0x4000	/* if I2C_FUNC_NOSTART */
 #define I2C_M_STOP		    0x8000	/* if I2C_FUNC_PROTOCOL_MANGLING */
 struct i2c_msg {
-    uint16_t addr;      /* slave address			*/
+    uint16_t addr; /* slave address			*/
     uint16_t flags;
-    uint16_t len;       /* msg length				*/
-    uint8_t buf[0] __attribute__((aligned(4)));     /* pointer to msg data			*/
+    uint16_t len; /* msg length				*/
+    uint8_t buf[0] __attribute__((aligned(4))); /* pointer to msg data			*/
 };
 
 struct i2c_cmd {
@@ -358,43 +377,42 @@ struct i2c_cmd {
     };
 } __attribute__((packed));
 
-static void prvI2cIO(struct i2c_msg *p) {    
-    if(LL_I2C_IsEnabledAutoEndMode(I2C1)){
-        LL_mDelay(1); // Optional. The delay time depends on the slave device. 
-        while(!LL_I2C_IsActiveFlag_STOP(I2C1));   
-        LL_I2C_ClearFlag_STOP(I2C1);         
-    }         
-      
+static void prvI2cIO(struct i2c_msg *p) {
+    if (LL_I2C_IsEnabledAutoEndMode(I2C1)) {
+        LL_mDelay(1);   // Optional. The delay time depends on the slave device.
+        while(!LL_I2C_IsActiveFlag_STOP(I2C1));
+        LL_I2C_ClearFlag_STOP(I2C1);
+    }
+
     LL_I2C_SetSlaveAddr(I2C1, p->addr << 1);
     LL_I2C_SetMasterAddressingMode(I2C1, p->flags & I2C_M_TEN ? LL_I2C_ADDRSLAVE_10BIT : LL_I2C_ADDRSLAVE_7BIT);
     LL_I2C_SetTransferRequest(I2C1, p->flags & I2C_M_RD ? LL_I2C_REQUEST_READ : LL_I2C_REQUEST_WRITE);
-    LL_I2C_SetTransferSize(I2C1, p->len);         
-    LL_I2C_GenerateStartCondition(I2C1);    
+    LL_I2C_SetTransferSize(I2C1, p->len);
+    LL_I2C_GenerateStartCondition(I2C1);
     LL_I2C_EnableAutoEndMode(I2C1);
-        
+
     if (LL_I2C_GetTransferRequest(I2C1) == LL_I2C_REQUEST_WRITE) {
         for (uint32_t i = 0; i < p->len; i++) {
-            LL_I2C_TransmitData8(I2C1, p->buf[i]);            
-            while (!LL_I2C_IsActiveFlag_TXE(I2C1));
-        }        
+            LL_I2C_TransmitData8(I2C1, p->buf[i]);
+            while (!LL_I2C_IsActiveFlag_TXE(I2C1)) ;
+        }
     } else {
-        #define BUF_LEN (64)
+#define BUF_LEN (64)
         uint8_t buf[BUF_LEN];
         for (uint32_t j = 0; j < p->len / BUF_LEN; j++) {
             for (uint32_t i = 0; i < BUF_LEN; i++) {
                 while (!LL_I2C_IsActiveFlag_RXNE(I2C1)) ;
                 buf[i] = LL_I2C_ReceiveData8(I2C1);
-            }   
+            }
             prvI2cRsp((uint8_t *)&buf, BUF_LEN);
         }
         for (uint32_t i = 0; i < p->len % BUF_LEN; i++) {
             while (!LL_I2C_IsActiveFlag_RXNE(I2C1)) ;
             buf[i] = LL_I2C_ReceiveData8(I2C1);
-        }   
+        }
         prvI2cRsp((uint8_t *)&buf, p->len % BUF_LEN);
-    } 
+    }
 }
-
 
 void vI2cReqCb(void *pvArg, uint32_t ulSize) {
     struct i2c_cmd *p = (struct i2c_cmd *)pvArg;
@@ -402,11 +420,11 @@ void vI2cReqCb(void *pvArg, uint32_t ulSize) {
     case CMD_ECHO:
         prvI2cRsp(&p->ucCmd, 1);
         break;
-    case CMD_SET_DELAY: 
+    case CMD_SET_DELAY:
         memcpy(&prvI2cDelay, &p->ulCfg, sizeof(prvI2cDelay));
         prvI2cRsp(&p->ucCmd, 1);
         break;
-    case CMD_GET_FUNC: 
+    case CMD_GET_FUNC:
         prvI2cRsp((uint8_t *)&prvI2cSupports, sizeof(prvI2cSupports));
         break;
     case CMD_GET_STATUS:
@@ -415,10 +433,10 @@ void vI2cReqCb(void *pvArg, uint32_t ulSize) {
     case CMD_I2C_IO:
     case CMD_I2C_IO | CMD_I2C_IO_BEGIN:
     case CMD_I2C_IO | CMD_I2C_IO_END:
-    case CMD_I2C_IO | CMD_I2C_IO_BEGIN | CMD_I2C_IO_END:		 
+    case CMD_I2C_IO | CMD_I2C_IO_BEGIN | CMD_I2C_IO_END:
         prvI2cIO(&p->xI2cMsg);
         break;
     default:
         break;
-    }    
+    }
 }

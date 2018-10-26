@@ -93,7 +93,9 @@
     <ClCompile Include="response.c" />
     <ClCompile Include="rtc.c" />
     <ClCompile Include="system_stm32f0xx.c" />
-    <ClCompile Include="USB_DEVICE\usbd_conf.c" />
+    <ClCompile Include="USB_DEVICE\usbd_conf.c">
+      <Optimization Condition="'$(Configuration)|$(Platform)'=='Debug|VisualGDB'">O0</Optimization>
+    </ClCompile>
     <ClCompile Include="USB_DEVICE\usbd_desc.c" />
     <ClCompile Include="USB_DEVICE\usbd_template_if.c">
       <Optimization Condition="'$(Configuration)|$(Platform)'=='Debug|VisualGDB'">O0</Optimization>
