@@ -98,15 +98,25 @@ static void prvSetBootReason(void) {
     /* Enable PWR clock */
     LL_APB1_GRP1_EnableClock(LL_APB1_GRP1_PERIPH_PWR);
     if (LL_PWR_IsActiveFlag_WU() && LL_PWR_IsActiveFlag_SB()) {
-        if (bIsApBtnPressed()) {
-            vSetBootReason("AP");
-        } else if (bIsInfoBtnPressed()) {
+	    uint32_t status = ulGetBtnStatus();
+	    vSetBtnStatus(status);
+        switch (status) {
+        case 1 :
+        case 3 :
+        case 7:
             vSetBootReason("INFO");
-        } else if (bIsRecoveryBtnPressed()) {
-            vSetBootReason("RECOVERY");
-        } else {
+            break;            
+        case 2 :
+        case 6 :
+            vSetBootReason("AP");
+            break;
+        case 4 :
+            vSetBootReason("KEY");
+            break;
+        default:
             vSetBootReason("RTC");
-        }
+            break;
+        }	    
     } else {
         vSetBootReason("PWR_ON");
     }       
@@ -163,14 +173,14 @@ static void prvMspInit(void) {
 
 static void prvBspInit(void) {
     vSysClkConfig();	
+    vBtnInit();
     vLedInit();
     vRtcInit();
-    vApBtnInit();
-    vInfoBtnInit();
-    vRecoveryBtnInit();        
     prvI2CInit();   	
     vPwrCtrlInit(); 		
     prvUsbDeviceInit();   
+    /* Clear Reset Flags */
+    LL_RCC_ClearResetFlags();
     /* Enable Systick interrupt */
 	LL_SYSTICK_EnableIT();
 }
@@ -185,9 +195,8 @@ int main(void) {
     prvSetBootReason();  
 //    prvWaitFirstReqFromHost();        
     /* Enable Btn Irq */
-//    vRecoveryBtnEnableIrq(ENABLE);
-//    vInfoBtnEnableIrq(ENABLE);
-//    vApBtnEnableIrq(ENABLE);
+    vBtnEnableIrq(ENABLE);
+
 	for (;;) { /* main loop */    	    	
         __WFI();   
     	struct PoolEntry xReqPoolEntry, xRspPoolEntry, xNotifyPoolEntry, xCtrlReqPoolEntry; 	
