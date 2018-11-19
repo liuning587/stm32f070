@@ -119,6 +119,15 @@ SECTIONS
 
 	PROVIDE(end = .);
 
+	.no_init (NOLOAD) :
+	{
+		. = ALIGN(4);
+		PROVIDE(__no_init_start__ = .);
+		KEEP(*(.no_init))
+		. = ALIGN(4);
+		PROVIDE(__no_init_end__ = .);
+	} > SRAM
+
 	.heap (NOLOAD) :
 	{
 		. = ALIGN(4);

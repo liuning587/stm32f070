@@ -12,6 +12,7 @@
 #include <usbd_template.h>
 #include <usbd_template_if.h>
 #include "pwrctrl.h"
+#include "button.h"
 
 extern USBD_HandleTypeDef USBD_Device;
 extern uint8_t USBD_CUSTOM_Transmit(USBD_HandleTypeDef *pdev, uint8_t epNum, const uint8_t *pData, uint32_t ulDataSize);
@@ -41,6 +42,36 @@ void vGetBootReason(void *pArg, uint32_t ulLen) {
     prvRsp(aucBootReason);
 }
 
+static void prvEnterLPM(void) {
+    /* Enable PWR clock */
+    LL_APB1_GRP1_EnableClock(LL_APB1_GRP1_PERIPH_PWR);
+        
+    /*
+    *  The Following Wakeup sequence is highly recommended prior to each Standby mode entry
+    *  mainly  when using more than one wakeup source this is to not miss any wakeup event.
+    *  1. Disable all used wakeup sources,
+    *  2. Clear all related wakeup flags,
+    *  3. Re-enable all used wakeup sources,
+    *  4. Enter the Standby mode.
+    */
+        
+    /* 1. Disable all used wakeup sources: WKUP pin */
+    LL_PWR_DisableWakeUpPin(LL_PWR_WAKEUP_PIN1); // Button Int Pin
+//        LL_PWR_DisableWakeUpPin(LL_PWR_WAKEUP_PIN2); // Battery Int Pin
+
+    /* 2. Clear all related wakeup flags */
+    LL_PWR_ClearFlag_WU();
+
+    /* 3. Re-enable all used wakeup sources */
+    LL_PWR_EnableWakeUpPin(LL_PWR_WAKEUP_PIN1);
+//        LL_PWR_EnableWakeUpPin(LL_PWR_WAKEUP_PIN2);
+
+    /* 4. Enter the Standby mode */
+    LL_PWR_SetPowerMode(LL_PWR_MODE_STANDBY); // Select STANDBY mode        
+    LL_LPM_EnableDeepSleep(); // Set SLEEPDEEP bit of Cortex System Control Register
+    __WFI(); // Request Wait For Interrupt
+}
+
 void vEnterLPM(void *pArg, uint32_t ulLen) {
     /* check if an alarm is present? */
     if (bIsAlarmSet == 0) {
@@ -54,46 +85,19 @@ void vEnterLPM(void *pArg, uint32_t ulLen) {
     /* DeInit usb device */
     USBD_DeInit(&USBD_Device);
 
-    /* */
-
-    /*
-     *  The Following Wakeup sequence is highly recommended prior to each Standby mode entry
-     *  mainly  when using more than one wakeup source this is to not miss any wakeup event.
-     *  - Disable all used wakeup sources,
-     *  - Clear all related wakeup flags,
-     *  - Re-enable all used wakeup sources,
-     *  - Enter the Standby mode.
-     */
-
-    /* Enable PWR clock */
-    LL_APB1_GRP1_EnableClock(LL_APB1_GRP1_PERIPH_PWR);
-
-    /* Disable all used wakeup sources: WKUP pin */
-    LL_PWR_DisableWakeUpPin(LL_PWR_WAKEUP_PIN1);      // Btn Int Pin
-    LL_PWR_DisableWakeUpPin(LL_PWR_WAKEUP_PIN2);      // Bat Int Pin
-
-    /* Clear all related wakeup flags */
-    LL_PWR_ClearFlag_WU();
-
-    /* Re-enable all used wakeup sources */
-    LL_PWR_EnableWakeUpPin(LL_PWR_WAKEUP_PIN1);
-    LL_PWR_EnableWakeUpPin(LL_PWR_WAKEUP_PIN2);
-
     /* Power Off all */
     vPwrCtrlExtUsbDev1(PWR_OFF);
     vPwrCtrlExtUsbDev2(PWR_OFF);
     vPwrCtrlEpd(PWR_OFF);
     vPwrCtrlUsbHub(PWR_OFF);
     vPwrCtrlRasberryPi(PWR_OFF);
-
-    /* Enter the Standby mode */
-    {
-        /* Select STANDBY mode */
-        LL_PWR_SetPowerMode(LL_PWR_MODE_STANDBY);
-        /* Set SLEEPDEEP bit of Cortex System Control Register */
-        LL_LPM_EnableDeepSleep();
-        /* Request Wait For Interrupt */
-        __WFI();
+    
+    uint32_t status = ulGetBtnStatus();        
+    if (status) {
+        vBackUpBtnStatus(status);
+        NVIC_SystemReset();
+    } else  {        
+        prvEnterLPM();
     }
 }
 
@@ -247,6 +251,12 @@ void vSetAlarm(void *pArg, uint32_t ulLen) {
     prvRsp("ACK");
 }
 
+void vGetBtn(void *pArg, uint32_t ulLen) {
+    char str[8];
+    sprintf(str, "%d", (int)ulGetBtnStatus());
+    prvRsp(str);
+}
+
 void vSetLed(void *pArg, uint32_t ulLen) {
     prvRsp(__FUNCTION__);
 }
@@ -278,6 +288,8 @@ pfRequestCb_t xRequestCb[] = {
     vSetAlarm,
     // K
     vSetLed,
+	// L
+	vGetBtn,
 };
 
 #define COUNTOF(x) (sizeof(x)/sizeof(x[0]))

@@ -77,7 +77,9 @@
   </ImportGroup>
   <ItemGroup>
     <ClCompile Include="circ_buf.c" />
-    <ClCompile Include="button.c" />
+    <ClCompile Include="button.c">
+      <Optimization Condition="'$(Configuration)|$(Platform)'=='Debug|VisualGDB'">O0</Optimization>
+    </ClCompile>
     <ClCompile Include="led.c">
       <Optimization Condition="'$(Configuration)|$(Platform)'=='Debug|VisualGDB'">O0</Optimization>
     </ClCompile>

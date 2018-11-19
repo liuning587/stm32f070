@@ -3,19 +3,10 @@
 
 #include <stdbool.h>
 
-void vRecoveryBtnInit(void);
-void vInfoBtnInit(void);
-void vApBtnInit(void);
+void vBtnInit(void);
+void vBtnEnableIrq(FunctionalState xEnable);
+uint32_t ulGetBtnStatus(void);
+void vSetBtnStatus(uint32_t status);
+void vBackUpBtnStatus(uint32_t status);
 
-bool bIsRecoveryBtnPressed(void);
-bool bIsInfoBtnPressed(void);
-bool bIsApBtnPressed(void);
-
-void vRecoveryBtnCb(void);
-void vInfoBtnCb(void);
-void vApBtnCb(void);
-
-void vRecoveryBtnEnableIrq(FunctionalState xEnable);
-void vInfoBtnEnableIrq(FunctionalState xEnable);
-void vApBtnEnableIrq(FunctionalState xEnable);
 #endif // !__BUTTON_H__
