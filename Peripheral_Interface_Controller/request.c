@@ -17,6 +17,7 @@ extern USBD_HandleTypeDef USBD_Device;
 extern uint8_t USBD_CUSTOM_Transmit(USBD_HandleTypeDef *pdev, uint8_t epNum, const uint8_t *pData, uint32_t ulDataSize);
 
 char aucBootReason[32];
+static uint32_t bIsAlarmSet = 0;
 
 static void prvRsp(const char *pcStr) {
     struct PoolEntry xEntryPut;
@@ -42,7 +43,7 @@ void vGetBootReason(void *pArg, uint32_t ulLen) {
 
 void vEnterLPM(void *pArg, uint32_t ulLen) {
     /* check if an alarm is present? */
-    if (LL_RTC_IsEnabledIT_ALRA(RTC) == 0) {
+    if (bIsAlarmSet == 0) {
         return;
     }
 
@@ -241,7 +242,8 @@ void vSetAlarm(void *pArg, uint32_t ulLen) {
     LL_RTC_EnableWriteProtection(RTC);
     /* Don't allow access to Backup */
     LL_PWR_DisableBkUpAccess();
-
+    /* Set AlarmSet Flag */
+    bIsAlarmSet = 1;
     prvRsp("ACK");
 }
 
