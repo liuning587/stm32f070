@@ -203,7 +203,7 @@ void HAL_PCD_SuspendCallback(PCD_HandleTypeDef *hpcd) {
     USBD_HandleTypeDef *pxUsbDev = (USBD_HandleTypeDef *)hpcd->pData;
     if (pxUsbDev->dev_old_state == USBD_STATE_CONFIGURED && pxUsbDev->dev_state == USBD_STATE_SUSPENDED) {   
         struct PoolEntry xPoolEntry;
-        const char acCommand[] = "C7500";   
+        const char acCommand[] = "C1000";   
         xPoolEntry.ucLen = sizeof(acCommand);
         memcpy((void *)xPoolEntry.aucData, acCommand, sizeof(acCommand));
         ulPoolsPut(EP1_REQ_POOL, (struct PoolEntry*)&xPoolEntry);
