@@ -142,9 +142,13 @@ static void prvWakeUpBtnCb(void) {
                 Public routine 
 ************************************************/
 void EXTI0_1_IRQHandler(void) {
+	static uint32_t tick = 0;
     if(LL_EXTI_IsActiveFlag_0_31(LL_EXTI_LINE_0)) { 
         LL_EXTI_ClearFlag_0_31(LL_EXTI_LINE_0);
-        prvWakeUpBtnCb();
+	    if (SysTick->VAL - tick > 200) {
+		    tick = SysTick->VAL;
+	        prvWakeUpBtnCb();
+	    } 	    
     }   
 }
 
