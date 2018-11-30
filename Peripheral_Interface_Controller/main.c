@@ -79,21 +79,6 @@ void vSysClkConfig(void) {
 
 }
 
-static void prvWaitFirstReqFromHost(void) {
-    uint32_t ret;
-    struct PoolEntry xReqPoolEntry, xRspPoolEntry;   
-    do {
-        __WFI();        
-    } while (ulPoolsGet(EP1_REQ_POOL, (struct PoolEntry*)&xReqPoolEntry) == 0);
-    uint32_t len = xReqPoolEntry.ucLen;
-    uint32_t reqId = xReqPoolEntry.aucData[0];
-    uint8_t *pArg = &xReqPoolEntry.aucData[1];
-    xGetReqCb(reqId)(pArg, len - 1);  
-    while (ulPoolsGet(EP1_RSP_POOL, (struct PoolEntry*)&xRspPoolEntry)) {        
-        vResponse(xRspPoolEntry.aucData, xRspPoolEntry.ucLen);     
-    } 
-}
-
 static void prvSetBootReason(void) {
     /* Enable PWR clock */
     LL_APB1_GRP1_EnableClock(LL_APB1_GRP1_PERIPH_PWR);
@@ -192,37 +177,36 @@ int main(void) {
     /* Application Init */
     vPoolsInit();     
     /* Application Start */
-    prvSetBootReason();  
-//    prvWaitFirstReqFromHost();        
+    prvSetBootReason();    
     /* Enable Btn Irq */
     vBtnEnableIrq(ENABLE);
-
-	for (;;) { /* main loop */    	    	
+    /* main loop */    	    	
+    for (;;) { 
         __WFI();   
-    	struct PoolEntry xReqPoolEntry, xRspPoolEntry, xNotifyPoolEntry, xCtrlReqPoolEntry; 	
+        struct PoolEntry xReqPoolEntry, xRspPoolEntry, xNotifyPoolEntry, xCtrlReqPoolEntry; 	
 		
         while (ulPoolsGet(I2C_REQ_POOL, (struct PoolEntry*)&xCtrlReqPoolEntry)) {        	
             extern void vI2cReqCb(void *pvArg, uint32_t ulSize);
             vI2cReqCb((void *)xCtrlReqPoolEntry.aucData, xCtrlReqPoolEntry.ucLen);
             while (ulPoolsGet(I2C_RSP_POOL, (struct PoolEntry*)&xRspPoolEntry)) {        
-        	    vI2cResponse(xRspPoolEntry.aucData, xRspPoolEntry.ucLen);     
-    	    } 
-    	} 
+                vI2cResponse(xRspPoolEntry.aucData, xRspPoolEntry.ucLen);     
+            } 
+        } 
 
-    	while (ulPoolsGet(EP1_REQ_POOL, (struct PoolEntry*)&xReqPoolEntry)) {        	
-        	uint32_t len = xReqPoolEntry.ucLen;
-        	uint32_t reqId = xReqPoolEntry.aucData[0];
-        	uint8_t *pArg = &xReqPoolEntry.aucData[1];
-        	xGetReqCb(reqId)(pArg, len - 1);        	
-    	    while (ulPoolsGet(EP1_RSP_POOL, (struct PoolEntry*)&xRspPoolEntry)) {        
-        	    vResponse(xRspPoolEntry.aucData, xRspPoolEntry.ucLen);     
-    	    } 
-    	} 
+        while (ulPoolsGet(EP1_REQ_POOL, (struct PoolEntry*)&xReqPoolEntry)) {        	
+            uint32_t len = xReqPoolEntry.ucLen;
+            uint32_t reqId = xReqPoolEntry.aucData[0];
+            uint8_t *pArg = &xReqPoolEntry.aucData[1];
+            xGetReqCb(reqId)(pArg, len - 1);        	
+            while (ulPoolsGet(EP1_RSP_POOL, (struct PoolEntry*)&xRspPoolEntry)) {        
+                vResponse(xRspPoolEntry.aucData, xRspPoolEntry.ucLen);     
+            } 
+        } 
     	
-    	if (ulPoolsGet(EP1_NOTIFY_POOL, (struct PoolEntry*)&xNotifyPoolEntry)) {        
-        	vNotify(xNotifyPoolEntry.aucData, xNotifyPoolEntry.ucLen);     
-    	}
-	}
+        if (ulPoolsGet(EP1_NOTIFY_POOL, (struct PoolEntry*)&xNotifyPoolEntry)) {        
+            vNotify(xNotifyPoolEntry.aucData, xNotifyPoolEntry.ucLen);     
+        }
+    }
 }
 
 static void prvDefualtSysTick(void) {
