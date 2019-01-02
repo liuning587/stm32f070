@@ -79,34 +79,6 @@ void vSysClkConfig(void) {
 
 }
 
-static void prvSetBootReason(void) {
-    /* Enable PWR clock */
-    LL_APB1_GRP1_EnableClock(LL_APB1_GRP1_PERIPH_PWR);
-    if (LL_PWR_IsActiveFlag_WU() && LL_PWR_IsActiveFlag_SB()) {
-	    uint32_t status = ulGetBtnStatus();
-	    vSetBtnStatus(status);
-        switch (status) {
-        case 1 :
-        case 3 :
-        case 7:
-            vSetBootReason("INFO");
-            break;            
-        case 2 :
-        case 6 :
-            vSetBootReason("AP");
-            break;
-        case 4 :
-            vSetBootReason("KEY");
-            break;
-        default:
-            vSetBootReason("RTC");
-            break;
-        }	    
-    } else {
-        vSetBootReason("PWR_ON");
-    }       
-}
-
 static void prvI2CInit(void) {
     LL_AHB1_GRP1_EnableClock(LL_AHB1_GRP1_PERIPH_GPIOB);
 
@@ -143,8 +115,6 @@ static void prvI2CInit(void) {
     LL_I2C_DisableAutoEndMode(I2C1); 
 }
 
-extern void vPwrCtrlInit(void);
-
 static void prvMspInit(void) {
     /* MCU Support Package */
     LL_FLASH_EnablePrefetch();    
@@ -158,28 +128,25 @@ static void prvMspInit(void) {
 
 static void prvBspInit(void) {
     vSysClkConfig();	
+
     vBtnInit();
     vLedInit();
     vRtcInit();
     prvI2CInit();   	
+	
+	extern void vPwrCtrlInit(void);
     vPwrCtrlInit(); 		
-    prvUsbDeviceInit();   
-    /* Clear Reset Flags */
-    LL_RCC_ClearResetFlags();
-    /* Enable Systick interrupt */
-	LL_SYSTICK_EnableIT();
+    
+	prvUsbDeviceInit();   
 }
 
-int main(void) {
+int main(void) {   
     /* Hardware Init */
     prvMspInit();	
     prvBspInit();
-    /* Application Init */
-    vPoolsInit();     
-    /* Application Start */
-    prvSetBootReason();    
-    /* Enable Btn Irq */
-    vBtnEnableIrq(ENABLE);
+    /* Clear Reset Flags & Enable Systick interrupt */
+    LL_RCC_ClearResetFlags();
+	LL_SYSTICK_EnableIT();
     /* main loop */    	    	
     for (;;) { 
         __WFI();   
@@ -247,6 +214,9 @@ void vSetSysTickCallBack(void *callback) {
 
 void HAL_SYSTICK_Callback(void) {
     pfSysTickCb();
+	
+	extern void vButtonHeldDetectCb(void);
+	vButtonHeldDetectCb();
 }
 
 void SysTick_Handler(void) {

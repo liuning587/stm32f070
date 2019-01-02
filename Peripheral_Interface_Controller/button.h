@@ -2,11 +2,11 @@
 #define __BUTTON_H__
 
 #include <stdbool.h>
-
 void vBtnInit(void);
-void vBtnEnableIrq(FunctionalState xEnable);
-uint32_t ulGetBtnStatus(void);
-void vSetBtnStatus(uint32_t status);
-void vBackUpBtnStatus(uint32_t status);
+void vBtnBackUp(void);
+bool bAnyBtnIsPressed(void);
+uint32_t ulGetCfgHeldMillis(void);
+uint32_t ulGetStaHeldMillis(void);
+uint32_t ulGetDefHeldMillis(void);
 
 #endif // !__BUTTON_H__
