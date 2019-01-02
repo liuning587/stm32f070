@@ -34,14 +34,6 @@ void vEcho(void *pArg, uint32_t ulLen) {
     ulPoolsPut(EP1_RSP_POOL, &xEntryPut);
 }
 
-void vSetBootReason(const char *pcReason) {
-    strcpy(aucBootReason, pcReason);
-}
-
-void vGetBootReason(void *pArg, uint32_t ulLen) {
-    prvRsp(aucBootReason);
-}
-
 static void prvEnterLPM(void) {
     /* Enable PWR clock */
     LL_APB1_GRP1_EnableClock(LL_APB1_GRP1_PERIPH_PWR);
@@ -91,10 +83,9 @@ void vEnterLPM(void *pArg, uint32_t ulLen) {
     vPwrCtrlEpd(PWR_OFF);
     vPwrCtrlUsbHub(PWR_OFF);
     vPwrCtrlRasberryPi(PWR_OFF);
-    
-    uint32_t status = ulGetBtnStatus();        
-    if (status) {
-        vBackUpBtnStatus(status);
+     
+    if (bAnyBtnIsPressed()) {
+		vBtnBackUp();
         NVIC_SystemReset();
     } else  {        
         prvEnterLPM();
@@ -251,12 +242,6 @@ void vSetAlarm(void *pArg, uint32_t ulLen) {
     prvRsp("ACK");
 }
 
-void vGetBtn(void *pArg, uint32_t ulLen) {
-    char str[8];
-    sprintf(str, "%d", (int)ulGetBtnStatus());
-    prvRsp(str);
-}
-
 void vSetLed(void *pArg, uint32_t ulLen) {
     prvRsp(__FUNCTION__);
 }
@@ -265,11 +250,29 @@ void vDummy(void *pArg, uint32_t ulLen) {
     prvRsp(__FUNCTION__);
 }
 
-pfRequestCb_t xRequestCb[] = {
+void vReqsCfgHeldMillis(void *pArg, uint32_t ulLen) {
+    char str[8];
+    sprintf(str, "%d", (int)ulGetCfgHeldMillis());
+    prvRsp(str);
+}
+
+void vReqsStaHeldMillis(void *pArg, uint32_t ulLen) {
+    char str[8];
+    sprintf(str, "%d", (int)ulGetStaHeldMillis());
+    prvRsp(str);
+}
+
+void vReqsDefHeldMillis(void *pArg, uint32_t ulLen) {
+    char str[8];
+    sprintf(str, "%d", (int)ulGetDefHeldMillis());
+    prvRsp(str);
+}
+
+pfRequestCb_t xRequestCb[ ] = {
     // A
     vEcho,
     // B
-    vGetBootReason,
+    vDummy,
     // C
     vEnterLPM,
     // D
@@ -289,7 +292,12 @@ pfRequestCb_t xRequestCb[] = {
     // K
     vSetLed,
 	// L
-	vGetBtn,
+	vReqsCfgHeldMillis,
+    // M
+    vReqsStaHeldMillis,
+    // N
+    vReqsDefHeldMillis,
+    // O
 };
 
 #define COUNTOF(x) (sizeof(x)/sizeof(x[0]))

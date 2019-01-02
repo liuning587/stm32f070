@@ -14,14 +14,11 @@
 #include "notify.h"
 #include "button.h"
 
-extern void vSetSysTickCallBack(void *callback);
-extern void* vGetSysTickCallBack(void);
-
 /******************************
- *  Key Port: GPIOA
- *  Key Pin: LL_GPIO_PIN_1
+ *  Cfg Port: GPIOA
+ *  Cfg Pin: LL_GPIO_PIN_1
  *******************************/
-static void prvInfoBtnInit(void) {
+static void prvCfgBtnHwInit(void) {
      /* Enable GPIOA clock */
     LL_AHB1_GRP1_EnableClock(LL_AHB1_GRP1_PERIPH_GPIOA);
     /* Configure PA0 pin as input floating */
@@ -33,15 +30,15 @@ static void prvInfoBtnInit(void) {
     LL_GPIO_Init(GPIOA, &GPIO_InitStructure);  
 }
 
-static bool prvIsInfoBtnPressed(void) {
+static bool prvIsCfgBtnPressed(void) {
     return LL_GPIO_IsInputPinSet(GPIOA, LL_GPIO_PIN_1);
 }
 
 /******************************
- *  Ap Port: GPIOA
- *  Ap Pin: LL_GPIO_PIN_2
+ *  State Port: GPIOA
+ *  State Pin: LL_GPIO_PIN_2
  *******************************/
-static void prvApBtnInit(void) {
+static void prvStaBtnHwInit(void) {
      /* Enable GPIOA clock */
     LL_AHB1_GRP1_EnableClock(LL_AHB1_GRP1_PERIPH_GPIOA);
     /* Configure PA0 pin as input floating */
@@ -51,18 +48,17 @@ static void prvApBtnInit(void) {
     GPIO_InitStructure.Pull = LL_GPIO_PULL_DOWN;
     GPIO_InitStructure.Pin = LL_GPIO_PIN_2;
     LL_GPIO_Init(GPIOA, &GPIO_InitStructure);  
-
 }
 
-static bool prvIsApBtnPressed(void) {
+static bool prvIsStaBtnPressed(void) {
     return LL_GPIO_IsInputPinSet(GPIOA, LL_GPIO_PIN_2);
 }
 
 /******************************
- *  Key Port: GPIOA
- *  Key Pin: LL_GPIO_PIN_3
+ *  Defult Port: GPIOA
+ *  Defult Pin: LL_GPIO_PIN_3
  *******************************/
-static void prvKeyBtnInit(void) {
+static void prvDefBtnHwInit(void) {
      /* Enable GPIOA clock */
     LL_AHB1_GRP1_EnableClock(LL_AHB1_GRP1_PERIPH_GPIOA);
     /* Configure PA0 pin as input floating */
@@ -74,7 +70,7 @@ static void prvKeyBtnInit(void) {
     LL_GPIO_Init(GPIOA, &GPIO_InitStructure);  
 }
 
-static bool prvIsKeyBtnPressed(void) {
+static bool prvIsDefBtnPressed(void) {
     return LL_GPIO_IsInputPinSet(GPIOA, LL_GPIO_PIN_3);
 }
 
@@ -82,7 +78,7 @@ static bool prvIsKeyBtnPressed(void) {
  *  WakeUp Port: GPIOA
  *  WakeUp Pin: LL_GPIO_PIN_0
  *******************************/
-static void prvWakeUpBtnInit(void) {
+static void prvWakeUpBtnHwInit(void) {
      /* Enable GPIOA clock */
     LL_AHB1_GRP1_EnableClock(LL_AHB1_GRP1_PERIPH_GPIOA);
     
@@ -99,7 +95,7 @@ static void prvWakeUpBtnInit(void) {
     NVIC_EnableIRQ(EXTI0_1_IRQn);
 }
 
-static void prvWakeUpBtnEnableIrq(FunctionalState xEnable) {
+static void prvWakeUpBtnIrqEnable(FunctionalState xEnable) {
     /* Enable SYSCF clock */
     LL_APB1_GRP2_EnableClock(LL_APB1_GRP2_PERIPH_SYSCFG);
     LL_SYSCFG_SetEXTISource(LL_SYSCFG_EXTI_PORTA, LL_SYSCFG_EXTI_LINE0);
@@ -116,75 +112,95 @@ static bool prvIsWakeUpBtnPressed(void) {
     return LL_GPIO_IsInputPinSet(GPIOA, LL_GPIO_PIN_0);
 }
 
-static uint32_t prvGetBtnStatus(void) {
-    uint32_t retValue = 0;    
-    if (prvIsInfoBtnPressed()) {
-        retValue = 0x01 << 0;
-    }    
-    if (prvIsApBtnPressed()) {
-        retValue = 0x01 << 1;
-    }    
-    if (prvIsKeyBtnPressed()) {
-        retValue = 0x01 << 2;
-    }    
-    return retValue;    
-}
+struct button {
+	uint32_t ulHeldMillis;
+	uint32_t ulLastHeldMillis;
+	bool bPreState;
+	bool bCurState;
+};
 
-static uint32_t prvBtnStatus = 0;
-static uint32_t prvBackUpBtnFlasg __attribute__ ((section (".no_init")));
-static uint32_t prvBackUpBtnStatus __attribute__ ((section (".no_init"))); 
-
-static void prvWakeUpBtnCb(void) {   
-	vSetBtnStatus(prvGetBtnStatus());	
-}
-
+static struct button prvCfgBtn;
+static struct button prvStaBtn;
+static struct button prvDefBtn;
+static struct button prvBackUpCfgBtn __attribute__ ((section (".no_init")));
+static struct button prvBackUpStaBtn __attribute__ ((section (".no_init")));
+static struct button prvBackUpDefBtn __attribute__ ((section (".no_init")));
+static uint32_t prvBackUpFlag __attribute__ ((section (".no_init")));
 /***********************************************
                 Public routine 
 ************************************************/
-void EXTI0_1_IRQHandler(void) {
-	static uint32_t tick = 0;
-    if(LL_EXTI_IsActiveFlag_0_31(LL_EXTI_LINE_0)) { 
-        LL_EXTI_ClearFlag_0_31(LL_EXTI_LINE_0);
-	    if (SysTick->VAL - tick > 200) {
-		    tick = SysTick->VAL;
-	        prvWakeUpBtnCb();
-	    } 	    
-    }   
+static void prvButtonHeldDetect(struct button *pxBtn, bool bIsBtnPressed) {
+	pxBtn->bCurState = bIsBtnPressed;
+	
+	if (pxBtn->bPreState == false && pxBtn->bCurState == false) {
+		pxBtn->ulHeldMillis = 0;
+	} else if (pxBtn->bPreState == true && pxBtn->bCurState == false) {
+		pxBtn->ulLastHeldMillis = pxBtn->ulHeldMillis > 50 ? pxBtn->ulHeldMillis : pxBtn->ulLastHeldMillis;			
+	} else if (pxBtn->bCurState == true) {
+		pxBtn->ulHeldMillis++;
+	}
+	
+	pxBtn->bPreState = pxBtn->bCurState;	
+}
+
+void vButtonHeldDetectCb(void) {
+	prvButtonHeldDetect(&prvCfgBtn, prvIsCfgBtnPressed());
+	prvButtonHeldDetect(&prvStaBtn, prvIsStaBtnPressed());
+	prvButtonHeldDetect(&prvDefBtn, prvIsDefBtnPressed());
+}
+	
+uint32_t ulGetCfgHeldMillis(void) {
+	uint32_t ret = prvCfgBtn.ulLastHeldMillis;
+	prvCfgBtn.ulLastHeldMillis = 0;
+	return ret;
+}
+
+uint32_t ulGetStaHeldMillis(void) {
+	uint32_t ret = prvStaBtn.ulLastHeldMillis;
+	prvStaBtn.ulLastHeldMillis = 0;
+	return ret;
+}
+
+uint32_t ulGetDefHeldMillis(void) {
+	uint32_t ret = prvDefBtn.ulLastHeldMillis;
+	prvDefBtn.ulLastHeldMillis = 0;
+	return ret;
 }
 
 void vBtnInit(void) {
-    prvInfoBtnInit();
-    prvApBtnInit();
-    prvKeyBtnInit();
-    prvWakeUpBtnInit();        
-    
-    vSetBtnStatus(prvGetBtnStatus());        
-    
-    if (LL_RCC_IsActiveFlag_SFTRST() && 
-        prvBackUpBtnFlasg == 0xAA33CC55 &&
-        prvGetBtnStatus() == 0x00) {
-        prvBtnStatus = prvBackUpBtnStatus;
+	prvCfgBtnHwInit();
+	prvStaBtnHwInit();
+	prvDefBtnHwInit();
+	prvWakeUpBtnHwInit();        
+        
+	if (LL_RCC_IsActiveFlag_SFTRST() && prvBackUpFlag == 0xAA33CC55) {
+		prvCfgBtn = prvBackUpCfgBtn;
+		prvStaBtn = prvBackUpStaBtn;
+		prvDefBtn = prvBackUpDefBtn;
+	}   
+	
+	memset(&prvBackUpCfgBtn, 0x00, sizeof(prvBackUpCfgBtn));
+	memset(&prvBackUpStaBtn, 0x00, sizeof(prvBackUpStaBtn));
+	memset(&prvBackUpDefBtn, 0x00, sizeof(prvBackUpDefBtn));
+	prvBackUpFlag = 0;
+	
+	prvWakeUpBtnIrqEnable(ENABLE);
+}
+
+bool bAnyBtnIsPressed(void) {
+	return prvCfgBtn.bCurState || prvStaBtn.bCurState || prvDefBtn.bCurState;
+}
+
+void vBtnBackUp(void) {
+    prvBackUpFlag = 0xAA33CC55;
+	prvBackUpCfgBtn = prvCfgBtn;
+	prvBackUpStaBtn = prvStaBtn;
+	prvBackUpDefBtn = prvDefBtn;
+}
+
+void EXTI0_1_IRQHandler(void) {	
+    if(LL_EXTI_IsActiveFlag_0_31(LL_EXTI_LINE_0)) { 
+        LL_EXTI_ClearFlag_0_31(LL_EXTI_LINE_0);
     }   
-    
-    prvBackUpBtnStatus = prvBackUpBtnFlasg = 0;
-}
-
-void vBtnEnableIrq(FunctionalState xEnable) {
-    prvWakeUpBtnEnableIrq(xEnable);
-}
-
-uint32_t ulGetBtnStatus(void) {
-	uint32_t retval = prvBtnStatus;
-    prvBtnStatus = 0;
-    return retval;    
-}
-
-void vSetBtnStatus(uint32_t status) {
-	prvBtnStatus = status;
-}
-
-void vBackUpBtnStatus(uint32_t status) {
-    prvBackUpBtnFlasg = 0xAA33CC55;
-    prvBackUpBtnStatus = status;
 }
 
