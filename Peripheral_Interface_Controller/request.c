@@ -13,6 +13,7 @@
 #include <usbd_template_if.h>
 #include "pwrctrl.h"
 #include "button.h"
+#include "board_info.h"
 
 extern USBD_HandleTypeDef USBD_Device;
 extern uint8_t USBD_CUSTOM_Transmit(USBD_HandleTypeDef *pdev, uint8_t epNum, const uint8_t *pData, uint32_t ulDataSize);
@@ -268,11 +269,19 @@ void vReqsDefHeldMillis(void *pArg, uint32_t ulLen) {
     prvRsp(str);
 }
 
+void vReqsInfo(void *pArg, uint32_t ulLen) {
+	#define MAX_STR_LEN 63
+    char str[MAX_STR_LEN + 1];
+	uint32_t infoType = ascii2bcd((char *)pArg, ulLen);
+	vGetInfo(str, MAX_STR_LEN, infoType);
+    prvRsp(str);
+}
+
 pfRequestCb_t xRequestCb[ ] = {
     // A
     vEcho,
     // B
-    vDummy,
+    vReqsInfo,
     // C
     vEnterLPM,
     // D

@@ -22,6 +22,13 @@ SECTIONS
 		. = ALIGN(4);
 	} > FLASH
 
+	.info : {
+		. = ALIGN(0x100);
+		_setting = .;
+		KEEP(*(.info))
+		. = ALIGN(0x10);
+	} > FLASH
+
 	.text :
 	{
 		. = ALIGN(4);

@@ -546,6 +546,9 @@
     <ClCompile Include="rtc.c">
       <Filter>Source files</Filter>
     </ClCompile>
+    <ClCompile Include="board_info.c">
+      <Filter>Source files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="USB_DEVICE\usbd_conf.h">
@@ -588,6 +591,9 @@
       <Filter>Header files</Filter>
     </ClInclude>
     <ClInclude Include="rtc.h">
+      <Filter>Header files</Filter>
+    </ClInclude>
+    <ClInclude Include="board_info.h">
       <Filter>Header files</Filter>
     </ClInclude>
   </ItemGroup>
