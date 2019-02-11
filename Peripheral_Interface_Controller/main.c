@@ -147,7 +147,7 @@ int main(void) {
     /* Clear Reset Flags & Enable Systick interrupt */
     LL_RCC_ClearResetFlags();
 	LL_SYSTICK_EnableIT();
-    /* main loop */    	    	
+	/* main loop */    	    	
     for (;;) { 
         __WFI();   
         struct PoolEntry xReqPoolEntry, xRspPoolEntry, xNotifyPoolEntry, xCtrlReqPoolEntry; 	
@@ -177,26 +177,6 @@ int main(void) {
 }
 
 static void prvDefualtSysTick(void) {
-    switch (HAL_GetTick() % 3000) {
-    case 0:
-        LL_GPIO_ResetOutputPin(GPIOA, LL_GPIO_PIN_5);
-        break;
-    case 200:
-        LL_GPIO_SetOutputPin(GPIOA, LL_GPIO_PIN_5);
-        break;   
-    case 300:
-        LL_GPIO_ResetOutputPin(GPIOA, LL_GPIO_PIN_5);
-        break;
-    case 500:
-        LL_GPIO_SetOutputPin(GPIOA, LL_GPIO_PIN_5);
-        break;  
-    case 600:
-        LL_GPIO_ResetOutputPin(GPIOA, LL_GPIO_PIN_5);
-        break;
-    case 800:
-        LL_GPIO_SetOutputPin(GPIOA, LL_GPIO_PIN_5);
-        break; 
-    }
 }
 
 static void(*pfSysTickCb)(void) = prvDefualtSysTick;
@@ -226,6 +206,7 @@ void SysTick_Handler(void) {
 
 void USB_IRQHandler(void) {
 	HAL_PCD_IRQHandler(&hpcd_USB_FS);
+	vLedTurnOn(5, 95, 100);
 }
 
 void _Error_Handler(void) {
