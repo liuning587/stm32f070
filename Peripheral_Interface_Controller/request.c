@@ -14,6 +14,7 @@
 #include "pwrctrl.h"
 #include "button.h"
 #include "board_info.h"
+#include "led.h"
 
 extern USBD_HandleTypeDef USBD_Device;
 extern uint8_t USBD_CUSTOM_Transmit(USBD_HandleTypeDef *pdev, uint8_t epNum, const uint8_t *pData, uint32_t ulDataSize);
@@ -70,7 +71,7 @@ void vEnterLPM(void *pArg, uint32_t ulLen) {
     if (bIsAlarmSet == 0) {
         return;
     }
-
+	
     for (int delay = atoi(pArg); delay > 0; delay--) {
         __WFI();
     }
@@ -84,8 +85,10 @@ void vEnterLPM(void *pArg, uint32_t ulLen) {
     vPwrCtrlEpd(PWR_OFF);
     vPwrCtrlUsbHub(PWR_OFF);
     vPwrCtrlRasberryPi(PWR_OFF);
-     
-    if (bAnyBtnIsPressed()) {
+    
+	vLedDarken();
+
+	if (bAnyBtnIsPressed()) {
 		vBtnBackUp();
         NVIC_SystemReset();
     } else  {        
@@ -95,7 +98,8 @@ void vEnterLPM(void *pArg, uint32_t ulLen) {
 
 void vSetEpdPwr(void *pArg, uint32_t ulLen) {
     if (*(uint8_t *)pArg == 0)
-        vPwrCtrlEpd(PWR_OFF); else
+        vPwrCtrlEpd(PWR_OFF); 
+	else
         vPwrCtrlEpd(PWR_ON);
 }
 
