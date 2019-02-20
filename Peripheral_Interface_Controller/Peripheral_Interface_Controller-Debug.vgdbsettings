@@ -65,7 +65,9 @@
         <StartupCommands>
           <string>target remote :$$SYS:GDB_PORT$$</string>
           <string>mon reset</string>
+          <string>erase</string>
           <string>load</string>
+          <string>mon reset</string>
         </StartupCommands>
         <UseUnreliableLiveMemoryEngine>false</UseUnreliableLiveMemoryEngine>
       </Configuration>

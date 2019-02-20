@@ -15,6 +15,7 @@
     <MemoryWindowPreferences>
       <MemoryWindowPreferences>
         <ExpressionHistory>
+          <string>0x200003f8 </string>
           <string>p</string>
           <string>pArg</string>
           <string>i2c_cmd</string>
