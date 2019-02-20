@@ -60,5 +60,5 @@ void vCircBufRead(CircBuf_t *pxCb, uint8_t *pucBuf, uint32_t ulLen) {
 }
 
 void vCircBufFlush(CircBuf_t *pxCb) {
-    pxCb->ulTail = pxCb->ulHead;
+    pxCb->ulTail = pxCb->ulHead = 0;
 }

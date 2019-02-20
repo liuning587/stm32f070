@@ -140,68 +140,64 @@ static void prvBspInit(void) {
 	prvUsbDeviceInit();   
 }
 
+static void prvI2cReqProcess(void) {
+    struct PoolEntry xRspPoolEntry, xCtrlReqPoolEntry; 
+    while (ulPoolsGet(I2C_REQ_POOL, (struct PoolEntry*)&xCtrlReqPoolEntry)) {        	
+        extern void vI2cReqCb(void *pvArg, uint32_t ulSize);
+        vI2cReqCb((void *)xCtrlReqPoolEntry.aucData, xCtrlReqPoolEntry.ucLen);
+        while (ulPoolsGet(I2C_RSP_POOL, (struct PoolEntry*)&xRspPoolEntry)) {        
+            vI2cResponse(xRspPoolEntry.aucData, xRspPoolEntry.ucLen);     
+        } 
+    } 
+}
+
+static void prvUsbEp1ReqProcess(void) {
+    struct PoolEntry xReqPoolEntry, xRspPoolEntry;
+    while (ulPoolsGet(EP1_REQ_POOL, (struct PoolEntry*)&xReqPoolEntry)) {        	
+        uint32_t len = xReqPoolEntry.ucLen;
+        uint32_t reqId = xReqPoolEntry.aucData[0];
+        uint8_t *pArg = &xReqPoolEntry.aucData[1];
+        xGetReqCb(reqId)(pArg, len - 1);        	
+        while (ulPoolsGet(EP1_RSP_POOL, (struct PoolEntry*)&xRspPoolEntry)) {        
+            vResponse(xRspPoolEntry.aucData, xRspPoolEntry.ucLen);     
+        } 
+    } 
+}
+
+static void prvUsbEp1RspProcess(void) {
+    struct PoolEntry xNotifyPoolEntry; 
+    if (ulPoolsGet(EP1_NOTIFY_POOL, (struct PoolEntry*)&xNotifyPoolEntry)) {        
+        vNotify(xNotifyPoolEntry.aucData, xNotifyPoolEntry.ucLen);     
+    }
+}
+
 int main(void) {   
     /* Hardware Init */
     prvMspInit();	
     prvBspInit();
-    /* Clear Reset Flags & Enable Systick interrupt */
+    /* Clear Reset Flags & Enable Systick interrupt */	
     LL_RCC_ClearResetFlags();
 	LL_SYSTICK_EnableIT();
 	/* main loop */    	    	
-    for (;;) { 
-        __WFI();   
-        struct PoolEntry xReqPoolEntry, xRspPoolEntry, xNotifyPoolEntry, xCtrlReqPoolEntry; 	
-		
-        while (ulPoolsGet(I2C_REQ_POOL, (struct PoolEntry*)&xCtrlReqPoolEntry)) {        	
-            extern void vI2cReqCb(void *pvArg, uint32_t ulSize);
-            vI2cReqCb((void *)xCtrlReqPoolEntry.aucData, xCtrlReqPoolEntry.ucLen);
-            while (ulPoolsGet(I2C_RSP_POOL, (struct PoolEntry*)&xRspPoolEntry)) {        
-                vI2cResponse(xRspPoolEntry.aucData, xRspPoolEntry.ucLen);     
-            } 
-        } 
-
-        while (ulPoolsGet(EP1_REQ_POOL, (struct PoolEntry*)&xReqPoolEntry)) {        	
-            uint32_t len = xReqPoolEntry.ucLen;
-            uint32_t reqId = xReqPoolEntry.aucData[0];
-            uint8_t *pArg = &xReqPoolEntry.aucData[1];
-            xGetReqCb(reqId)(pArg, len - 1);        	
-            while (ulPoolsGet(EP1_RSP_POOL, (struct PoolEntry*)&xRspPoolEntry)) {        
-                vResponse(xRspPoolEntry.aucData, xRspPoolEntry.ucLen);     
-            } 
-        } 
-    	
-        if (ulPoolsGet(EP1_NOTIFY_POOL, (struct PoolEntry*)&xNotifyPoolEntry)) {        
-            vNotify(xNotifyPoolEntry.aucData, xNotifyPoolEntry.ucLen);     
-        }
+    for (;;) {  
+        __WFI();           
+        prvI2cReqProcess();
+        prvUsbEp1ReqProcess();
+        prvUsbEp1RspProcess();
     }
 }
 
-static void prvDefualtSysTick(void) {
-}
-
-static void(*pfSysTickCb)(void) = prvDefualtSysTick;
-
-void* vGetSysTickCallBack(void) {
-    return pfSysTickCb;
-}
+static void(*prvSysTickCb)(void) = NULL;
 
 void vSetSysTickCallBack(void *callback) {
-    if (callback == NULL) 
-        pfSysTickCb = prvDefualtSysTick;
-    else
-        pfSysTickCb = callback;
-}
-
-void HAL_SYSTICK_Callback(void) {
-    pfSysTickCb();
-	
-	extern void vButtonHeldDetectCb(void);
-	vButtonHeldDetectCb();
+    prvSysTickCb = callback;
 }
 
 void SysTick_Handler(void) {
 	HAL_IncTick();
-	HAL_SYSTICK_IRQHandler();
+	vButtonHeldDetectCb();
+    if(prvSysTickCb != NULL)
+        prvSysTickCb();	
 }
 
 void USB_IRQHandler(void) {

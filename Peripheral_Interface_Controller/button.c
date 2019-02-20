@@ -116,7 +116,6 @@ struct button {
 	uint32_t ulHeldMillis;
 	uint32_t ulLastHeldMillis;
 	bool bPreState;
-	bool bCurState;
 };
 
 static struct button prvCfgBtn;
@@ -129,18 +128,15 @@ static uint32_t prvBackUpFlag __attribute__ ((section (".no_init")));
 /***********************************************
                 Public routine 
 ************************************************/
-static void prvButtonHeldDetect(struct button *pxBtn, bool bIsBtnPressed) {
-	pxBtn->bCurState = bIsBtnPressed;
-	
-	if (pxBtn->bPreState == false && pxBtn->bCurState == false) {
+static void prvButtonHeldDetect(struct button *pxBtn, bool bIsBtnPressed) {	
+	if (pxBtn->bPreState == false && bIsBtnPressed == false) {
 		pxBtn->ulHeldMillis = 0;
-	} else if (pxBtn->bPreState == true && pxBtn->bCurState == false) {
+	} else if (pxBtn->bPreState == true && bIsBtnPressed == false) {
 		pxBtn->ulLastHeldMillis = pxBtn->ulHeldMillis > 50 ? pxBtn->ulHeldMillis : pxBtn->ulLastHeldMillis;			
-	} else if (pxBtn->bCurState == true) {
+	} else if (pxBtn->bPreState == true && bIsBtnPressed == true) {
 		pxBtn->ulHeldMillis++;
-	}
-	
-	pxBtn->bPreState = pxBtn->bCurState;	
+	}	
+	pxBtn->bPreState = bIsBtnPressed;	
 }
 
 void vButtonHeldDetectCb(void) {
@@ -167,6 +163,15 @@ uint32_t ulGetDefHeldMillis(void) {
 	return ret;
 }
 
+uint32_t ulPeekDefHeldMillis(void) {
+	uint32_t ret = prvDefBtn.ulLastHeldMillis;
+	return ret;
+}
+
+void vSetDefHeldMillis(uint32_t ulMsec) {
+	prvDefBtn.ulLastHeldMillis = ulMsec;
+}
+
 void vBtnInit(void) {
 	prvCfgBtnHwInit();
 	prvStaBtnHwInit();
@@ -187,8 +192,10 @@ void vBtnInit(void) {
 	prvWakeUpBtnIrqEnable(ENABLE);
 }
 
-bool bAnyBtnIsPressed(void) {
-	return prvCfgBtn.bCurState || prvStaBtn.bCurState || prvDefBtn.bCurState;
+bool bAnyBtnIsPressed(void) {    
+    return prvCfgBtn.ulLastHeldMillis > 1 || 
+        prvStaBtn.ulLastHeldMillis > 1 || 
+        prvDefBtn.ulLastHeldMillis > 1;
 }
 
 void vBtnBackUp(void) {
