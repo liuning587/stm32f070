@@ -18,8 +18,6 @@
 
 extern USBD_HandleTypeDef USBD_Device;
 extern uint8_t USBD_CUSTOM_Transmit(USBD_HandleTypeDef *pdev, uint8_t epNum, const uint8_t *pData, uint32_t ulDataSize);
-
-char aucBootReason[32];
 static uint32_t bIsAlarmSet = 0;
 
 static void prvRsp(const char *pcStr) {
@@ -67,11 +65,6 @@ static void prvEnterLPM(void) {
 }
 
 void vEnterLPM(void *pArg, uint32_t ulLen) {
-    /* check if an alarm is present? */
-    if (bIsAlarmSet == 0) {
-        return;
-    }
-	
     for (int delay = atoi(pArg); delay > 0; delay--) {
         __WFI();
     }
@@ -88,7 +81,7 @@ void vEnterLPM(void *pArg, uint32_t ulLen) {
     
 	vLedDarken();
 
-	if (bAnyBtnIsPressed()) {
+	if (bAnyBtnIsPressed() || bIsAlarmSet == 0) {
 		vBtnBackUp();
         NVIC_SystemReset();
     } else  {        
@@ -161,27 +154,6 @@ void vSetTime(void *pArg, uint32_t ulLen) {
         prvRsp("NACK");
     }
 }
-
-//#define LL_RTC_WEEKDAY_MONDAY              ((uint8_t)0x01U) /*!< Monday    */
-//#define LL_RTC_WEEKDAY_TUESDAY             ((uint8_t)0x02U) /*!< Tuesday   */
-//#define LL_RTC_WEEKDAY_WEDNESDAY           ((uint8_t)0x03U) /*!< Wednesday */
-//#define LL_RTC_WEEKDAY_THURSDAY            ((uint8_t)0x04U) /*!< Thrusday  */
-//#define LL_RTC_WEEKDAY_FRIDAY              ((uint8_t)0x05U) /*!< Friday    */
-//#define LL_RTC_WEEKDAY_SATURDAY            ((uint8_t)0x06U) /*!< Saturday  */
-//#define LL_RTC_WEEKDAY_SUNDAY              ((uint8_t)0x07U) /*!< Sunday    */
-
-//#define LL_RTC_MONTH_JANUARY               ((uint8_t)0x01U)  /*!< January   */
-//#define LL_RTC_MONTH_FEBRUARY              ((uint8_t)0x02U)  /*!< February  */
-//#define LL_RTC_MONTH_MARCH                 ((uint8_t)0x03U)  /*!< March     */
-//#define LL_RTC_MONTH_APRIL                 ((uint8_t)0x04U)  /*!< April     */
-//#define LL_RTC_MONTH_MAY                   ((uint8_t)0x05U)  /*!< May       */
-//#define LL_RTC_MONTH_JUNE                  ((uint8_t)0x06U)  /*!< June      */
-//#define LL_RTC_MONTH_JULY                  ((uint8_t)0x07U)  /*!< July      */
-//#define LL_RTC_MONTH_AUGUST                ((uint8_t)0x08U)  /*!< August    */
-//#define LL_RTC_MONTH_SEPTEMBER             ((uint8_t)0x09U)  /*!< September */
-//#define LL_RTC_MONTH_OCTOBER               ((uint8_t)0x10U)  /*!< October   */
-//#define LL_RTC_MONTH_NOVEMBER              ((uint8_t)0x11U)  /*!< November  */
-//#define LL_RTC_MONTH_DECEMBER              ((uint8_t)0x12U)  /*!< December  */
 
 void vGetDate(void *pArg, uint32_t ulLen) {
     char str[32];
