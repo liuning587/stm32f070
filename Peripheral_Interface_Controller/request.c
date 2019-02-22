@@ -96,9 +96,9 @@ void vSetEpdPwr(void *pArg, uint32_t ulLen) {
         vPwrCtrlEpd(PWR_ON);
 }
 
-void vGetTime(void *pArg, uint32_t ulLen) {
+void vGetDateTime(void *pArg, uint32_t ulLen) {
     char str[32];
-    sprintf(str, "%08X\r\n", (int)LL_RTC_TIME_Get(RTC));
+    sprintf(str, "%08X%08X\r\n", (int)LL_RTC_TIME_Get(RTC), (int)LL_RTC_DATE_Get(RTC));
     prvRsp(str);
 }
 
@@ -133,8 +133,9 @@ uint32_t ascii2bcd(char *cHexStr, uint32_t ulLen) {
     return ret;
 }
 
-void vSetTime(void *pArg, uint32_t ulLen) {
-    int32_t time = ascii2bcd((char *)pArg, ulLen);
+void vSetDateTime(void *pArg, uint32_t ulLen) {
+    uint32_t time = ascii2bcd((char *)&pArg[0], 8);
+    uint32_t date = ascii2bcd((char *)&pArg[8], 8);
 
     LL_RTC_TimeTypeDef RTC_TimeStruct;
     RTC_TimeStruct.TimeFormat = LL_RTC_HOURFORMAT_24HOUR;
@@ -142,43 +143,16 @@ void vSetTime(void *pArg, uint32_t ulLen) {
     RTC_TimeStruct.Minutes = __LL_RTC_GET_MINUTE(time);
     RTC_TimeStruct.Seconds = __LL_RTC_GET_SECOND(time);
     LL_RTC_TIME_Init(RTC, LL_RTC_FORMAT_BCD, &RTC_TimeStruct);
-
-    LL_PWR_EnableBkUpAccess();
-    LL_RTC_TIME_Init(RTC, LL_RTC_FORMAT_BCD, &RTC_TimeStruct);
-
-    LL_PWR_DisableBkUpAccess();
-
-    if (LL_RTC_TIME_Get(RTC) == time) {
-        prvRsp("ACK");
-    } else {
-        prvRsp("NACK");
-    }
-}
-
-void vGetDate(void *pArg, uint32_t ulLen) {
-    char str[32];
-    sprintf(str, "%08X\r\n", (int)LL_RTC_DATE_Get(RTC));
-    prvRsp(str);
-}
-
-void vSetDate(void *pArg, uint32_t ulLen) {
-    uint32_t date = ascii2bcd((char *)pArg, ulLen);
-
     LL_RTC_DateTypeDef RTC_DateStruct;
     RTC_DateStruct.WeekDay = __LL_RTC_GET_WEEKDAY(date);
     RTC_DateStruct.Month = __LL_RTC_GET_MONTH(date);
     RTC_DateStruct.Day = __LL_RTC_GET_DAY(date);
-    RTC_DateStruct.Year = __LL_RTC_GET_YEAR(date);
-
+    RTC_DateStruct.Year = __LL_RTC_GET_YEAR(date);	
+	
     LL_PWR_EnableBkUpAccess();
+    LL_RTC_TIME_Init(RTC, LL_RTC_FORMAT_BCD, &RTC_TimeStruct);
     LL_RTC_DATE_Init(RTC, LL_RTC_FORMAT_BCD, &RTC_DateStruct);
     LL_PWR_DisableBkUpAccess();
-
-    if (LL_RTC_DATE_Get(RTC) == date) {
-        prvRsp("ACK");
-    } else {
-        prvRsp("NACK");
-    }
 }
 
 void vGetAlarm(void *pArg, uint32_t ulLen) {
@@ -263,13 +237,13 @@ pfRequestCb_t xRequestCb[ ] = {
     // D
     vSetEpdPwr,
     // E
-    vGetTime,
+    vGetDateTime,
     // F
-    vSetTime,
+    vSetDateTime,
     // G
-    vGetDate,
+    vDummy,
     // H
-    vSetDate,
+    vDummy,
     // I
     vGetAlarm,
     // J
