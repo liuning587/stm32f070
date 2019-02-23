@@ -68,6 +68,9 @@ void vEnterLPM(void *pArg, uint32_t ulLen) {
     for (int delay = atoi(pArg); delay > 0; delay--) {
         __WFI();
     }
+	
+	if (bIsAlarmSet == 0)
+		return;
 
     /* DeInit usb device */
     USBD_DeInit(&USBD_Device);
@@ -81,7 +84,7 @@ void vEnterLPM(void *pArg, uint32_t ulLen) {
     
 	vLedDarken();
 
-	if (bAnyBtnIsPressed() || bIsAlarmSet == 0) {
+	if (bAnyBtnIsPressed()) {
 		vBtnBackUp();
         NVIC_SystemReset();
     } else  {        
@@ -98,7 +101,7 @@ void vSetEpdPwr(void *pArg, uint32_t ulLen) {
 
 void vGetDateTime(void *pArg, uint32_t ulLen) {
     char str[32];
-    sprintf(str, "%08X%08X\r\n", (int)LL_RTC_TIME_Get(RTC), (int)LL_RTC_DATE_Get(RTC));
+    sprintf(str, "00%06X%08X\r\n", (int)LL_RTC_TIME_Get(RTC), (int)LL_RTC_DATE_Get(RTC));
     prvRsp(str);
 }
 
@@ -142,7 +145,6 @@ void vSetDateTime(void *pArg, uint32_t ulLen) {
     RTC_TimeStruct.Hours = __LL_RTC_GET_HOUR(time);
     RTC_TimeStruct.Minutes = __LL_RTC_GET_MINUTE(time);
     RTC_TimeStruct.Seconds = __LL_RTC_GET_SECOND(time);
-    LL_RTC_TIME_Init(RTC, LL_RTC_FORMAT_BCD, &RTC_TimeStruct);
     LL_RTC_DateTypeDef RTC_DateStruct;
     RTC_DateStruct.WeekDay = __LL_RTC_GET_WEEKDAY(date);
     RTC_DateStruct.Month = __LL_RTC_GET_MONTH(date);
